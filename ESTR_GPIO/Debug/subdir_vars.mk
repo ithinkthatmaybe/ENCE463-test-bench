@@ -13,7 +13,8 @@ C_SRCS += \
 ../rit128x96x4.c \
 ../startup_ccs.c \
 ../stopwatch.c \
-../tasks.c 
+../tasks.c \
+../uut_gpio.c 
 
 OBJS += \
 ./list.obj \
@@ -22,7 +23,8 @@ OBJS += \
 ./rit128x96x4.obj \
 ./startup_ccs.obj \
 ./stopwatch.obj \
-./tasks.obj 
+./tasks.obj \
+./uut_gpio.obj 
 
 C_DEPS += \
 ./list.pp \
@@ -31,7 +33,8 @@ C_DEPS += \
 ./rit128x96x4.pp \
 ./startup_ccs.pp \
 ./stopwatch.pp \
-./tasks.pp 
+./tasks.pp \
+./uut_gpio.pp 
 
 C_DEPS__QUOTED += \
 "list.pp" \
@@ -40,7 +43,8 @@ C_DEPS__QUOTED += \
 "rit128x96x4.pp" \
 "startup_ccs.pp" \
 "stopwatch.pp" \
-"tasks.pp" 
+"tasks.pp" \
+"uut_gpio.pp" 
 
 OBJS__QUOTED += \
 "list.obj" \
@@ -49,7 +53,8 @@ OBJS__QUOTED += \
 "rit128x96x4.obj" \
 "startup_ccs.obj" \
 "stopwatch.obj" \
-"tasks.obj" 
+"tasks.obj" \
+"uut_gpio.obj" 
 
 C_SRCS__QUOTED += \
 "../list.c" \
@@ -58,6 +63,7 @@ C_SRCS__QUOTED += \
 "../rit128x96x4.c" \
 "../startup_ccs.c" \
 "../stopwatch.c" \
-"../tasks.c" 
+"../tasks.c" \
+"../uut_gpio.c" 
 
 

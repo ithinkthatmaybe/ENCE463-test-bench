@@ -31,7 +31,6 @@
 */
 
 
-
 /* FreeRTOS includes. */
 #include "include/FreeRTOS.h"
 #include "include/task.h"
@@ -45,6 +44,8 @@
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.c"
 
+#include "drivers/rit128x96x4.h"
+
 /* Demo includes. */
 #include "demo_code\basic_io.h"
 
@@ -56,23 +57,23 @@
 /* Used as a loop counter to create a very crude delay. */
 #define mainDELAY_LOOP_COUNT		( 0xfffff )
 
-/* The task function. */
+
+#define TEST_ONE_MAX_RESPONSE_TIME_US 400
+
+// prototypes
+void vISRgpio_port_e(void);	// airspeed isr
+
 void vTaskHeartbeat( void *pvParameters );
 void vTaskStimulateAirspeed( void *pvParameters);
 void vTaskTestStopwatch(void);
 
-// isr prototype
-void vISRgpio_port_e(void);
 
-/* Define the strings that will be passed in as the task parameters.  These are
-defined const and off the stack to ensure they remain valid when the tasks are
-executing. */
-const char *pcTextForTask1 = "Task 1 is running\n";
-const char *pcTextForTask2 = "Task 2 is running\n";
+
 
 /*-----------------------------------------------------------*/
 
 stopwatch_t g_airspeed_stopwatch;
+char g_airspeed_response_flag;
 
 int main( void )
 {
@@ -99,10 +100,22 @@ int main( void )
 	// Setup Airspeed output
 	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2);
 
+
 	// Create ESTR tasks
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
 	xTaskCreate( vTaskStimulateAirspeed, "Airspeed Stimulus", 240, NULL, 1, NULL);
 //	xTaskCreate( vTaskTestStopwatch, "stopwatch test", 240, NULL, 1, NULL);
+
+	// END init
+
+	//NOTE: code acts in in place of python test manager, will be removed.
+//	RIT128x96x4Init(1000000);
+//	RIT128x96x4StringDraw("Press select to ", 8, 0, 4);
+//	RIT128x96x4StringDraw("start test", 8, 12, 4);
+//	GPIOPinTypeGPIOInput(GPIO_PORTG_BASE, (1<<7));
+//	while(GPIOPinRead(GPIO_PORTG_BASE, (1<<7)) == (1<<7)); // wait for button press
+//	RIT128x96x4Clear();
+
 
 	/* Start the scheduler so our tasks start executing. */
 	IntMasterEnable();
@@ -115,27 +128,16 @@ int main( void )
 }
 /*-----------------------------------------------------------*/
 
-void vTaskTestStopwatch(void)
-{
-	stopwatch_t stopwatch;
-	for(;;)
-	{
-		stopwatch_start(&stopwatch);
-		vTaskDelay(300 / portTICK_RATE_MS);
-		stopwatch_stop(&stopwatch);
-//		vTaskDelay(300);
-		unsigned long time = stopwatch_get_time_ms(&stopwatch);
-	}
-}
+
 
 // ISR responds to airspeed pulses
 void vISRgpio_port_e(void)
 {
 	GPIOPinIntClear(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-//	GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, STATUS_LED_PG2);
-	GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
 
-	stopwatch_stop(&g_airspeed_stopwatch);
+//	GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
+	stopwatch_stop(&g_airspeed_stopwatch);	// TODO: protect with mutex
+	g_airspeed_response_flag = 1;
 	return;
 }
 
@@ -151,54 +153,49 @@ void vISRgpio_port_c(void)
 //TODO: measure average, maximum response time
 void vTaskStimulateAirspeed(void *pvParameters)
 {
-//	int iTaskDelayPeriod = 20 / portTICK_RATE_MS;		// TODO: macro
-
-	static unsigned long average_response_time = 0;
-	static unsigned long max_response_time = 0;
-
-	static unsigned char initialised = 0;
-
+	int iTaskDelayPeriod = 5 / portTICK_RATE_MS;		// TODO: macro
 
 	for (;;)
 	{
-		initialised = 0;	//Not writing, wierd
-		max_response_time = 0;
-		average_response_time = 0;
 
 		unsigned long j;
 		for (j = 0; j < 200; j++)
 		{
-
-			if (initialised == 0)
-				initialised++;
-			else if (initialised == 1){
-				average_response_time = stopwatch_get_time_us(&g_airspeed_stopwatch);
-				max_response_time = average_response_time;
-				initialised++;
-			}
-			else{
-				unsigned long time = stopwatch_get_time_us(&g_airspeed_stopwatch); // check the stopwatch from the last stimulation
-				average_response_time = (average_response_time+time)/2;
-				if (time > max_response_time)
-					max_response_time = time;
-			}
-
-
+			g_airspeed_response_flag = 0;
 			stopwatch_start(&g_airspeed_stopwatch);			// TODO: protect stopwatch with mutex
 			GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, UUT_AIRSPEED_OUTPUT_PIN_PE2);
-		//		vTaskDelay(iTaskDelayPeriod/2);
+
+			// block wait for pulse width
 			unsigned int i;
 			for (i = 0; i < 2000; i++)
 				continue;
 
+
+			vTaskDelay(iTaskDelayPeriod/2);
+			GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
+			vTaskDelay(iTaskDelayPeriod/2);
 			// this shouldnt do anything, but stops the pin state from getting stuck high if the
 			// UUT throws a wobbly or something
-		//		GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
-		//		vTaskDelay(iTaskDelayPeriod/2);
+
+//			if (g_airspeed_response_flag != 1)
+//			{
+//				RIT128x96x4StringDraw("Test Failed", 8, 40, 4);
+//				RIT128x96x4StringDraw("1:1 response failure", 8, 50, 4);
+//				while(1);
+//			}
+//
+//			unsigned long time = stopwatch_get_time_us(&g_airspeed_stopwatch);
+//			if (time >= TEST_ONE_MAX_RESPONSE_TIME_US)
+//			{
+//				RIT128x96x4StringDraw("Test Failed", 8, 40, 4);
+//				RIT128x96x4StringDraw("Max response time exceeded", 8, 50, 4);
+//				while(1);
+//			}
+
 		}
-		char breakpoint = 0;
 	}
 }
+
 
 void vTaskHeartbeat(void *pvParameters)
 {

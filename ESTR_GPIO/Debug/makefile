@@ -15,6 +15,7 @@ $(GEN_CMDS__FLAG) \
 "./startup_ccs.obj" \
 "./stopwatch.obj" \
 "./tasks.obj" \
+"./uut_gpio.obj" \
 "./portable/heap_2.obj" \
 "./portable/port.obj" \
 "./portable/portasm.obj" \
@@ -123,40 +124,40 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-team6.out \
+ESTR_GPIO.out \
 
 EXE_OUTPUTS__QUOTED += \
-"team6.out" \
+"ESTR_GPIO.out" \
 
 BIN_OUTPUTS += \
-team6.hex \
+ESTR_GPIO.hex \
 
 BIN_OUTPUTS__QUOTED += \
-"team6.hex" \
+"ESTR_GPIO.hex" \
 
 
 # All Target
-all: team6.out
+all: ESTR_GPIO.out
 
 # Tool invocations
-team6.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+ESTR_GPIO.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armcl" -mv7M3 --code_state=16 --abi=eabi -me -g --gcc --define="ccs" --define=PART_LM3S1968 --display_error_number --diag_warning=225 --diag_wrap=off -z -m"team6.map" --heap_size=0x800 --stack_size=0x800 -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/lib" -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="team6_linkInfo.xml" --rom_model -o "team6.out" $(ORDERED_OBJS)
+	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armcl" -mv7M3 --code_state=16 --abi=eabi -me -g --gcc --define="ccs" --define=PART_LM3S1968 --display_error_number --diag_warning=225 --diag_wrap=off -z -m"ESTR_GPIO.map" --heap_size=0x800 --stack_size=0x800 -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/lib" -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="ESTR_GPIO_linkInfo.xml" --rom_model -o "ESTR_GPIO.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-team6.hex: $(EXE_OUTPUTS)
+ESTR_GPIO.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armhex"  -o "team6.hex" $(EXE_OUTPUTS__QUOTED)
+	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armhex"  -o "ESTR_GPIO.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
-	-$(RM) "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
+	-$(RM) "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "uut_gpio.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
+	-$(RM) "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "uut_gpio.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
 	-$(RM) "portable\portasm.pp" 
 	-@echo 'Finished clean'
 	-@echo ' '

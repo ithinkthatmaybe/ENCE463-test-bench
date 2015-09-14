@@ -22,9 +22,11 @@ main.obj: J:/StellarisWare/inc/hw_nvic.h
 main.obj: J:/StellarisWare/driverlib/cpu.h
 main.obj: J:/StellarisWare/driverlib/debug.h
 main.obj: J:/StellarisWare/driverlib/interrupt.h
+main.obj: J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h
 main.obj: ../demo_code/basic_io.h
 main.obj: ../pins.h
 main.obj: ../include/stopwatch.h
+main.obj: ../include/task.h
 
 ../main.c: 
 ../include/FreeRTOS.h: 
@@ -48,6 +50,8 @@ J:/StellarisWare/inc/hw_nvic.h:
 J:/StellarisWare/driverlib/cpu.h: 
 J:/StellarisWare/driverlib/debug.h: 
 J:/StellarisWare/driverlib/interrupt.h: 
+J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h: 
 ../demo_code/basic_io.h: 
 ../pins.h: 
 ../include/stopwatch.h: 
+../include/task.h: 
