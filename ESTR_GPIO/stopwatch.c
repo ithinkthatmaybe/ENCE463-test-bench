@@ -57,19 +57,21 @@ void stopwatch_start(stopwatch_t* stopwatch)
 {
 	stopwatch->start_ticks = xTaskGetTickCount();
 	stopwatch->start_subticks = SysTickValueGet();
+	stopwatch->state = STOPWATCH_STARTED;
 }
 
 void stopwatch_stop(stopwatch_t* stopwatch)
 {
 	stopwatch->stop_ticks = xTaskGetTickCount();
 	stopwatch->stop_subticks = SysTickValueGet();
+	stopwatch->state = STOPWATCH_STOPPED;
 }
 
 
 unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 {
 	unsigned long subticks;
-	if (stopwatch->stop_ticks == stopwatch->start_ticks)
+	if (stopwatch->start_subticks > stopwatch->stop_subticks) //not an overflow overflow
 		subticks = stopwatch->start_subticks - stopwatch->stop_subticks;
 	else
 	{
@@ -90,12 +92,13 @@ unsigned long stopwatch_get_time_ms(stopwatch_t* stopwatch)
 //TODO: impliment rollover case
 unsigned long stopwatch_get_time_us(stopwatch_t* stopwatch)
 {
-//	static unsigned long subtick_period;
-
-
-	// Subtract one because there is almost certainly some subticks contrubuting to the time
-	unsigned long ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks-1)*portTICK_RATE_MS*1000;
+	unsigned long ticks_us = 0;
+	if (stopwatch->start_ticks != stopwatch->stop_ticks)
+		ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks - 1)*portTICK_RATE_MS*1000;
 	unsigned long subticks_us = stopwatch_get_subticks(stopwatch)/configCPU_CLOCK_HZ*1000000;
 
+	unsigned long debug = ticks_us + subticks_us;
+	if (debug > 5000)
+		debug = 5000;
 	return ticks_us + subticks_us;
 }

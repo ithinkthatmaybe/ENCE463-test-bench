@@ -12,12 +12,16 @@
 #include "task.h"
 #include "driverlib/systick.h"
 
+#define STOPWATCH_STARTED 0
+#define STOPWATCH_STOPPED 1
+
 // TODO: stopwatch module
 typedef struct _stopwatch_t{
 	unsigned long start_ticks;
 	unsigned long start_subticks;
 	unsigned long stop_ticks;
 	unsigned long stop_subticks;
+	char state;
 } stopwatch_t;
 
 //Test the operation of the stopwatch
