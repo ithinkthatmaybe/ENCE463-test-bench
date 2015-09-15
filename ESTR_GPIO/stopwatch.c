@@ -15,6 +15,7 @@
 void vTaskTestStopwatch(void)
 {
 	stopwatch_t stopwatch;
+	unsigned long time;
 
 	for(;;)
 	{

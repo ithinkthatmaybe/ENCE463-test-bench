@@ -1,6 +1,9 @@
 # FIXED
 
 main.obj: ../main.c
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h
 main.obj: ../include/FreeRTOS.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h
 main.obj: ../include/projdefs.h
@@ -23,12 +26,17 @@ main.obj: J:/StellarisWare/driverlib/cpu.h
 main.obj: J:/StellarisWare/driverlib/debug.h
 main.obj: J:/StellarisWare/driverlib/interrupt.h
 main.obj: J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h
-main.obj: ../demo_code/basic_io.h
 main.obj: ../pins.h
 main.obj: ../include/stopwatch.h
 main.obj: ../include/task.h
+main.obj: ../include/uut_gpio.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: ../include/task.h
 
 ../main.c: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h: 
 ../include/FreeRTOS.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h: 
 ../include/projdefs.h: 
@@ -51,7 +59,9 @@ J:/StellarisWare/driverlib/cpu.h:
 J:/StellarisWare/driverlib/debug.h: 
 J:/StellarisWare/driverlib/interrupt.h: 
 J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h: 
-../demo_code/basic_io.h: 
 ../pins.h: 
 ../include/stopwatch.h: 
+../include/task.h: 
+../include/uut_gpio.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 ../include/task.h: 
