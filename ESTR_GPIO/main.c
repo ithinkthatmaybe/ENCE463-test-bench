@@ -30,6 +30,7 @@
     licensing and training services.
 */
 
+#include <stdio.h>
 
 /* FreeRTOS includes. */
 #include "include/FreeRTOS.h"
@@ -46,9 +47,6 @@
 
 #include "drivers/rit128x96x4.h"
 
-/* Demo includes. */
-#include "demo_code\basic_io.h"
-
 /* specific includes */
 #include "pins.h"
 
@@ -59,6 +57,11 @@
 
 
 #define TEST_ONE_MAX_RESPONSE_TIME_US 400
+
+#define TEST_ONE_INIT_PERIOD 3000  //undefined unit
+#define TEST_ONE_MIN_PERIOD 1500   //undefined unit
+#define TEST_ONE_NUM_CYCLES 3
+
 
 // prototypes
 void vISRgpio_port_e(void);	// airspeed isr
@@ -109,12 +112,13 @@ int main( void )
 	// END init
 
 	//NOTE: code acts in in place of python test manager, will be removed.
-//	RIT128x96x4Init(1000000);
-//	RIT128x96x4StringDraw("Press select to ", 8, 0, 4);
-//	RIT128x96x4StringDraw("start test", 8, 12, 4);
-//	GPIOPinTypeGPIOInput(GPIO_PORTG_BASE, (1<<7));
-//	while(GPIOPinRead(GPIO_PORTG_BASE, (1<<7)) == (1<<7)); // wait for button press
-//	RIT128x96x4Clear();
+	RIT128x96x4Init(1000000);
+	RIT128x96x4StringDraw("Press select to ", 8, 0, 4);
+	RIT128x96x4StringDraw("start test", 8, 12, 4);
+	GPIOPinTypeGPIOInput(GPIO_PORTG_BASE, (1<<7));
+	while(GPIOPinRead(GPIO_PORTG_BASE, (1<<7)) == (1<<7)); // wait for button press
+	RIT128x96x4Clear();
+	RIT128x96x4StringDraw("running... ", 8, 0, 4);
 
 
 	/* Start the scheduler so our tasks start executing. */
@@ -134,9 +138,7 @@ int main( void )
 void vISRgpio_port_e(void)
 {
 	GPIOPinIntClear(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-//	GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
-	stopwatch_stop(&g_airspeed_stopwatch);	// TODO: protect with mutex
+	stopwatch_stop(&g_airspeed_stopwatch);	// TODO: protect stopwatch with mutex
 	g_airspeed_response_flag = 1;
 	return;
 }
@@ -151,47 +153,66 @@ void vISRgpio_port_c(void)
 //TODO: Variable width, find minimal detection width
 //TODO: Variable frequency, finid maximum operating frequency, or what percentage of total pulses are missed as a function of frequency
 //TODO: measure average, maximum response time
+
+// Section requires the testing of airspeed measurement simulation, ie quadrature pulses recieved from an encoder attached to an anemometer
+// here we provide variable frequency, variable width pulses by holding a constant duty cycle of 50% and increasing the frequency
 void vTaskStimulateAirspeed(void *pvParameters)
 {
-	int iTaskDelayPeriod = 5 / portTICK_RATE_MS;		// TODO: macro
+	int period_width = TEST_ONE_INIT_PERIOD;
+
+	int cycles = 0;
+	int timeouts = 0;
+	int misses = 0;
 
 	for (;;)
 	{
 
-		unsigned long j;
-		for (j = 0; j < 200; j++)
+		g_airspeed_response_flag = 0;
+		stopwatch_start(&g_airspeed_stopwatch);			// TODO: protect stopwatch with mutex
+		GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, UUT_AIRSPEED_OUTPUT_PIN_PE2);
+
+		// block wait for pulse width
+		unsigned int i;
+		for (i = 0; i < period_width/2; i++)
+			continue;
+
+		GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
+
+		for(i =  0; i < period_width/2; i++)
+			continue;
+
+		period_width--;
+		unsigned long time = stopwatch_get_time_us(&g_airspeed_stopwatch);
+
+
+
+
+		if (g_airspeed_response_flag != 1)
+			misses++;
+
+
+		if (time >= TEST_ONE_MAX_RESPONSE_TIME_US)
+			timeouts++;
+
+
+		if (period_width <= TEST_ONE_MIN_PERIOD)
 		{
-			g_airspeed_response_flag = 0;
-			stopwatch_start(&g_airspeed_stopwatch);			// TODO: protect stopwatch with mutex
-			GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, UUT_AIRSPEED_OUTPUT_PIN_PE2);
-
-			// block wait for pulse width
-			unsigned int i;
-			for (i = 0; i < 2000; i++)
-				continue;
+			cycles++;
+			period_width = TEST_ONE_INIT_PERIOD;
+		}
 
 
-			vTaskDelay(iTaskDelayPeriod/2);
-			GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
-			vTaskDelay(iTaskDelayPeriod/2);
-			// this shouldnt do anything, but stops the pin state from getting stuck high if the
-			// UUT throws a wobbly or something
+		if (cycles > TEST_ONE_NUM_CYCLES)
+		{
+			RIT128x96x4Clear();
+			RIT128x96x4StringDraw("Test finished", 8, 40, 4);
+			char buffer[20] = {0};
+			sprintf(buffer, "%d misses", (int)misses);
+			RIT128x96x4StringDraw(buffer, 8, 50, 4);
+			sprintf(buffer, "%d timeouts", (int)timeouts);
+			RIT128x96x4StringDraw(buffer, 8, 60, 4);
 
-//			if (g_airspeed_response_flag != 1)
-//			{
-//				RIT128x96x4StringDraw("Test Failed", 8, 40, 4);
-//				RIT128x96x4StringDraw("1:1 response failure", 8, 50, 4);
-//				while(1);
-//			}
-//
-//			unsigned long time = stopwatch_get_time_us(&g_airspeed_stopwatch);
-//			if (time >= TEST_ONE_MAX_RESPONSE_TIME_US)
-//			{
-//				RIT128x96x4StringDraw("Test Failed", 8, 40, 4);
-//				RIT128x96x4StringDraw("Max response time exceeded", 8, 50, 4);
-//				while(1);
-//			}
-
+			while(1);
 		}
 	}
 }
@@ -211,30 +232,7 @@ void vTaskHeartbeat(void *pvParameters)
 
 
 
-void vTaskFunction( void *pvParameters )
-{
-char *pcTaskName;
-volatile unsigned long ul;
 
-	/* The string to print out is passed in via the parameter.  Cast this to a
-	character pointer. */
-	pcTaskName = ( char * ) pvParameters;
-
-	/* As per most tasks, this task is implemented in an infinite loop. */
-	for( ;; )
-	{
-		/* Print out the name of this task. */
-		vPrintString( pcTaskName );
-
-		/* Delay for a period. */
-		for( ul = 0; ul < mainDELAY_LOOP_COUNT; ul++ )
-		{
-			/* This loop is just a very crude delay implementation.  There is
-			nothing to do in here.  Later exercises will replace this crude
-			loop with a proper delay/sleep function. */
-		}
-	}
-}
 /*-----------------------------------------------------------*/
 
 void vApplicationMallocFailedHook( void )
@@ -256,7 +254,7 @@ void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed char *pcTaskName
 
 void vApplicationIdleHook( void )
 {
-	/* This example does not use the idle hook to perform any processing. */
+	/* contemplate existance */
 }
 /*-----------------------------------------------------------*/
 
