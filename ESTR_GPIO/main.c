@@ -77,7 +77,6 @@ int main( void )
 
 	// Create ESTR tasks
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
-	xTaskCreate( vTaskStimulateAirspeed, "Airspeed Stimulus", 240, NULL, 1, NULL);
 //	xTaskCreate( vTaskTestStopwatch, "stopwatch test", 240, NULL, 1, NULL);
 
 
@@ -104,12 +103,6 @@ int main( void )
 /*-----------------------------------------------------------*/
 
 
-
-
-
-
-
-
 void vTaskHeartbeat(void *pvParameters)
 {
 	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;		// TODO: macro
@@ -121,8 +114,6 @@ void vTaskHeartbeat(void *pvParameters)
 		vTaskDelay(iTaskDelayPeriod);
 	}
 }
-
-
 
 
 /*-----------------------------------------------------------*/

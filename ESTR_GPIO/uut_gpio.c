@@ -40,11 +40,10 @@ void uut_gpio_init(void)
 
 	// Setup Airspeed output
 	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2);
-}
 
-//TODO: Variable width, find minimal detection width
-//TODO: Variable frequency, finid maximum operating frequency, or what percentage of total pulses are missed as a function of frequency
-//TODO: measure average, maximum response time
+	// Register test task
+	xTaskCreate( vTaskStimulateAirspeed, "Airspeed Stimulus", 240, NULL, 1, NULL);
+}
 
 // Section requires the testing of airspeed measurement simulation, ie quadrature pulses recieved from an encoder attached to an anemometer
 // here we provide variable frequency, variable width pulses by holding a constant duty cycle of 50% and increasing the frequency
