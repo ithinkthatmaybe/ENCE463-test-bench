@@ -15,7 +15,6 @@
 void vTaskTestStopwatch(void)
 {
 	stopwatch_t stopwatch;
-	unsigned long time;
 
 	for(;;)
 	{
@@ -26,6 +25,7 @@ void vTaskTestStopwatch(void)
 		time = stopwatch_get_time_ms(&stopwatch);
 
 		// Test reliable tick level operation
+//		unsigned long time;
 		int i;
 //		for (i = 0; i < 100; i++)
 //		{
@@ -65,7 +65,12 @@ void stopwatch_stop(stopwatch_t* stopwatch)
 	stopwatch->stop_subticks = SysTickValueGet();
 }
 
-
+// Takes a stoped stopwatch and returns the number of subticks that
+// occured during the operating interval
+// Does not return the total stored time interval in subticks,
+// ie if a number of ticks has occured this will not return a
+// value representing the total time difference measured
+// so care must be taken
 unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 {
 	unsigned long subticks;
@@ -79,15 +84,16 @@ unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 	return subticks;
 }
 
+// Returns the number of milliseconds measured by a
+// stopped stopwatch instance.
 unsigned long stopwatch_get_time_ms(stopwatch_t* stopwatch)
 {
 	return (stopwatch->stop_ticks-stopwatch->start_ticks)*portTICK_RATE_MS;
 }
 
-//WARNING: uses a devide operation, do not call from a high frequency ISR!
+//WARNING: uses a divide operation, do not call from a high frequency ISR!
 //TODO: Fix for data dependancies, currently the airspeed ISR is pretty well controlled, so not immediately an issue
 //TODO: possible to improve accuracy?  good to +/- 2 us
-//TODO: impliment rollover case
 unsigned long stopwatch_get_time_us(stopwatch_t* stopwatch)
 {
 //	static unsigned long subtick_period;

@@ -5,6 +5,16 @@
  *      Author: sws52
  */
 
+/* Measures time intervals, example:
+ *
+ *
+ * stopwatch_t stopwatch;
+ * stopwatch_start(&stopwatch);
+ * delay_ms(500);
+ * stopwatdh_stop(&stopwacth);
+ * unsigned long time_meas = stopwatch_get_time_ms(&stopwatch); //Will return 500
+ */
+
 #ifndef STOPWATCH_H_
 #define STOPWATCH_H_
 
