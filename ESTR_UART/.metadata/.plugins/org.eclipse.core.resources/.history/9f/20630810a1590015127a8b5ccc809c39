@@ -1,0 +1,209 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+################################################################################
+
+# Each subdirectory must supply rules for building sources it contributes
+Demo/AltBlckQ.obj: ../Demo/AltBlckQ.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/AltBlckQ.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/AltBlock.obj: ../Demo/AltBlock.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/AltBlock.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/AltPollQ.obj: ../Demo/AltPollQ.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/AltPollQ.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/AltQTest.obj: ../Demo/AltQTest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/AltQTest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/BlockQ.obj: ../Demo/BlockQ.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/BlockQ.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/GenQTest.obj: ../Demo/GenQTest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/GenQTest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/IntQueue.obj: ../Demo/IntQueue.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/IntQueue.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/IntQueueTimer.obj: ../Demo/IntQueueTimer.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/IntQueueTimer.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/ParTest.obj: ../Demo/ParTest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/ParTest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/PollQ.obj: ../Demo/PollQ.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/PollQ.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/QPeek.obj: ../Demo/QPeek.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/QPeek.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/QueueSet.obj: ../Demo/QueueSet.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/QueueSet.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/TimerDemo.obj: ../Demo/TimerDemo.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/TimerDemo.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/blocktim.obj: ../Demo/blocktim.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/blocktim.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/comtest.obj: ../Demo/comtest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/comtest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/comtest_strings.obj: ../Demo/comtest_strings.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/comtest_strings.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/countsem.obj: ../Demo/countsem.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/countsem.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/crflash.obj: ../Demo/crflash.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/crflash.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/crhook.obj: ../Demo/crhook.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/crhook.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/death.obj: ../Demo/death.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/death.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/dynamic.obj: ../Demo/dynamic.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/dynamic.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/flash.obj: ../Demo/flash.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/flash.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/flash_timer.obj: ../Demo/flash_timer.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/flash_timer.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/flop.obj: ../Demo/flop.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/flop.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/integer.obj: ../Demo/integer.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/integer.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/recmutex.obj: ../Demo/recmutex.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/recmutex.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/semtest.obj: ../Demo/semtest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/semtest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/sp_flop.obj: ../Demo/sp_flop.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/sp_flop.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Demo/timertest.obj: ../Demo/timertest.c $(GEN_OPTS) $(GEN_SRCS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: ARM Compiler'
+	"C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/bin/cl470" -mv6 --code_state=32 --abi=ti_arm9_abi -g --include_path="C:/ti2/ccsv5/tools/compiler/tms470_4.9.5/include" --include_path="C:/courses/ENCE361/StellarisWare/utils" --include_path="C:/courses/ENCE361/StellarisWare/boards/ek-lm3s1968" --include_path="C:/courses/ENCE361/StellarisWare" --diag_warning=225 --display_error_number --preproc_with_compile --preproc_dependency="Demo/timertest.pp" --obj_directory="Demo" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+

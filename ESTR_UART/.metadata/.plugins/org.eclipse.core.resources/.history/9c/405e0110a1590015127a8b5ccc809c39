@@ -1,0 +1,192 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+C_SRCS += \
+../Demo/AltBlckQ.c \
+../Demo/AltBlock.c \
+../Demo/AltPollQ.c \
+../Demo/AltQTest.c \
+../Demo/BlockQ.c \
+../Demo/GenQTest.c \
+../Demo/IntQueue.c \
+../Demo/IntQueueTimer.c \
+../Demo/ParTest.c \
+../Demo/PollQ.c \
+../Demo/QPeek.c \
+../Demo/QueueSet.c \
+../Demo/TimerDemo.c \
+../Demo/blocktim.c \
+../Demo/comtest.c \
+../Demo/comtest_strings.c \
+../Demo/countsem.c \
+../Demo/crflash.c \
+../Demo/crhook.c \
+../Demo/death.c \
+../Demo/dynamic.c \
+../Demo/flash.c \
+../Demo/flash_timer.c \
+../Demo/flop.c \
+../Demo/integer.c \
+../Demo/recmutex.c \
+../Demo/semtest.c \
+../Demo/sp_flop.c \
+../Demo/timertest.c 
+
+OBJS += \
+./Demo/AltBlckQ.obj \
+./Demo/AltBlock.obj \
+./Demo/AltPollQ.obj \
+./Demo/AltQTest.obj \
+./Demo/BlockQ.obj \
+./Demo/GenQTest.obj \
+./Demo/IntQueue.obj \
+./Demo/IntQueueTimer.obj \
+./Demo/ParTest.obj \
+./Demo/PollQ.obj \
+./Demo/QPeek.obj \
+./Demo/QueueSet.obj \
+./Demo/TimerDemo.obj \
+./Demo/blocktim.obj \
+./Demo/comtest.obj \
+./Demo/comtest_strings.obj \
+./Demo/countsem.obj \
+./Demo/crflash.obj \
+./Demo/crhook.obj \
+./Demo/death.obj \
+./Demo/dynamic.obj \
+./Demo/flash.obj \
+./Demo/flash_timer.obj \
+./Demo/flop.obj \
+./Demo/integer.obj \
+./Demo/recmutex.obj \
+./Demo/semtest.obj \
+./Demo/sp_flop.obj \
+./Demo/timertest.obj 
+
+C_DEPS += \
+./Demo/AltBlckQ.pp \
+./Demo/AltBlock.pp \
+./Demo/AltPollQ.pp \
+./Demo/AltQTest.pp \
+./Demo/BlockQ.pp \
+./Demo/GenQTest.pp \
+./Demo/IntQueue.pp \
+./Demo/IntQueueTimer.pp \
+./Demo/ParTest.pp \
+./Demo/PollQ.pp \
+./Demo/QPeek.pp \
+./Demo/QueueSet.pp \
+./Demo/TimerDemo.pp \
+./Demo/blocktim.pp \
+./Demo/comtest.pp \
+./Demo/comtest_strings.pp \
+./Demo/countsem.pp \
+./Demo/crflash.pp \
+./Demo/crhook.pp \
+./Demo/death.pp \
+./Demo/dynamic.pp \
+./Demo/flash.pp \
+./Demo/flash_timer.pp \
+./Demo/flop.pp \
+./Demo/integer.pp \
+./Demo/recmutex.pp \
+./Demo/semtest.pp \
+./Demo/sp_flop.pp \
+./Demo/timertest.pp 
+
+C_DEPS__QUOTED += \
+"Demo\AltBlckQ.pp" \
+"Demo\AltBlock.pp" \
+"Demo\AltPollQ.pp" \
+"Demo\AltQTest.pp" \
+"Demo\BlockQ.pp" \
+"Demo\GenQTest.pp" \
+"Demo\IntQueue.pp" \
+"Demo\IntQueueTimer.pp" \
+"Demo\ParTest.pp" \
+"Demo\PollQ.pp" \
+"Demo\QPeek.pp" \
+"Demo\QueueSet.pp" \
+"Demo\TimerDemo.pp" \
+"Demo\blocktim.pp" \
+"Demo\comtest.pp" \
+"Demo\comtest_strings.pp" \
+"Demo\countsem.pp" \
+"Demo\crflash.pp" \
+"Demo\crhook.pp" \
+"Demo\death.pp" \
+"Demo\dynamic.pp" \
+"Demo\flash.pp" \
+"Demo\flash_timer.pp" \
+"Demo\flop.pp" \
+"Demo\integer.pp" \
+"Demo\recmutex.pp" \
+"Demo\semtest.pp" \
+"Demo\sp_flop.pp" \
+"Demo\timertest.pp" 
+
+OBJS__QUOTED += \
+"Demo\AltBlckQ.obj" \
+"Demo\AltBlock.obj" \
+"Demo\AltPollQ.obj" \
+"Demo\AltQTest.obj" \
+"Demo\BlockQ.obj" \
+"Demo\GenQTest.obj" \
+"Demo\IntQueue.obj" \
+"Demo\IntQueueTimer.obj" \
+"Demo\ParTest.obj" \
+"Demo\PollQ.obj" \
+"Demo\QPeek.obj" \
+"Demo\QueueSet.obj" \
+"Demo\TimerDemo.obj" \
+"Demo\blocktim.obj" \
+"Demo\comtest.obj" \
+"Demo\comtest_strings.obj" \
+"Demo\countsem.obj" \
+"Demo\crflash.obj" \
+"Demo\crhook.obj" \
+"Demo\death.obj" \
+"Demo\dynamic.obj" \
+"Demo\flash.obj" \
+"Demo\flash_timer.obj" \
+"Demo\flop.obj" \
+"Demo\integer.obj" \
+"Demo\recmutex.obj" \
+"Demo\semtest.obj" \
+"Demo\sp_flop.obj" \
+"Demo\timertest.obj" 
+
+C_SRCS__QUOTED += \
+"../Demo/AltBlckQ.c" \
+"../Demo/AltBlock.c" \
+"../Demo/AltPollQ.c" \
+"../Demo/AltQTest.c" \
+"../Demo/BlockQ.c" \
+"../Demo/GenQTest.c" \
+"../Demo/IntQueue.c" \
+"../Demo/IntQueueTimer.c" \
+"../Demo/ParTest.c" \
+"../Demo/PollQ.c" \
+"../Demo/QPeek.c" \
+"../Demo/QueueSet.c" \
+"../Demo/TimerDemo.c" \
+"../Demo/blocktim.c" \
+"../Demo/comtest.c" \
+"../Demo/comtest_strings.c" \
+"../Demo/countsem.c" \
+"../Demo/crflash.c" \
+"../Demo/crhook.c" \
+"../Demo/death.c" \
+"../Demo/dynamic.c" \
+"../Demo/flash.c" \
+"../Demo/flash_timer.c" \
+"../Demo/flop.c" \
+"../Demo/integer.c" \
+"../Demo/recmutex.c" \
+"../Demo/semtest.c" \
+"../Demo/sp_flop.c" \
+"../Demo/timertest.c" 
+
+
