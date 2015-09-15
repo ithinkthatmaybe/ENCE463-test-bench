@@ -1,0 +1,12 @@
+
+
+ESTR_GPIO:
+
+System primarily works around uut_gpio.c, the uut_gpio_init() sets up gpio data direction etc before registering 
+the airspeed response interrupt and registering an airspeed stimulus task that performs the test. 
+
+The stopwatch module is used to measure response times. one stopwatch instance is used, it is started in the 
+RTOS airspeed task and stopped in the response interupt. A flag (g_airspeed_response_flag) is also set in the task 
+and reset in the interrupt. This is used to check 1:1 respose.  
+
+It is expected that the structure of this body will change significantly.
