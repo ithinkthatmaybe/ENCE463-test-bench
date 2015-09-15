@@ -1,0 +1,21 @@
+This file contains instructions to setup CCS to build a .bin file.
+The .bin file is required by "LM Flash Programmer" in order to
+program the Stellaris.
+
+====STEP ONE====
+Properties --> Build --> Steps tab
+under Post-build steps, paste: 
+"${CCE_INSTALL_ROOT}/utils/tiobj2bin/tiobj2bin" "${BuildArtifactFileName}" "${BuildArtifactFileBaseName}.bin" "${CG_TOOL_ROOT}/bin/ofd470" "${CG_TOOL_ROOT}/bin/hex470" "${CCE_INSTALL_ROOT}/utils/tiobj2bin/mkhex4bin"
+
+
+
+
+====STEP TWO====
+You may need to add resources to CCS if they are not there already.
+For example, SW_ROOT was not already there for me.
+
+Properties --> Linked Resources --> Path Variables tab
+add new:
+NAME: SW_ROOT
+LOCATION: ${ORIGINAL_PROJECT_ROOT}\..\..\..\..
+
