@@ -5,7 +5,7 @@
  *      Author: sws52
  */
 
-#include "include/stopwatch.h"
+#include "stopwatch.h"
 
 
 
@@ -15,6 +15,7 @@
 void vTaskTestStopwatch(void)
 {
 	stopwatch_t stopwatch;
+	unsigned long time;
 
 	for(;;)
 	{
@@ -25,7 +26,6 @@ void vTaskTestStopwatch(void)
 		time = stopwatch_get_time_ms(&stopwatch);
 
 		// Test reliable tick level operation
-//		unsigned long time;
 		int i;
 //		for (i = 0; i < 100; i++)
 //		{
@@ -57,26 +57,19 @@ void stopwatch_start(stopwatch_t* stopwatch)
 {
 	stopwatch->start_ticks = xTaskGetTickCount();
 	stopwatch->start_subticks = SysTickValueGet();
-	stopwatch->state = STOPWATCH_STARTED;
 }
 
 void stopwatch_stop(stopwatch_t* stopwatch)
 {
 	stopwatch->stop_ticks = xTaskGetTickCount();
 	stopwatch->stop_subticks = SysTickValueGet();
-	stopwatch->state = STOPWATCH_STOPPED;
 }
 
-// Takes a stoped stopwatch and returns the number of subticks that
-// occured during the operating interval
-// Does not return the total stored time interval in subticks,
-// ie if a number of ticks has occured this will not return a
-// value representing the total time difference measured
-// so care must be taken
+
 unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 {
 	unsigned long subticks;
-	if (stopwatch->start_subticks > stopwatch->stop_subticks) //not an overflow overflow
+	if (stopwatch->stop_ticks == stopwatch->start_ticks)
 		subticks = stopwatch->start_subticks - stopwatch->stop_subticks;
 	else
 	{
@@ -86,25 +79,23 @@ unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 	return subticks;
 }
 
-// Returns the number of milliseconds measured by a
-// stopped stopwatch instance.
 unsigned long stopwatch_get_time_ms(stopwatch_t* stopwatch)
 {
 	return (stopwatch->stop_ticks-stopwatch->start_ticks)*portTICK_RATE_MS;
 }
 
-//WARNING: uses a divide operation, do not call from a high frequency ISR!
+//WARNING: uses a devide operation, do not call from a high frequency ISR!
 //TODO: Fix for data dependancies, currently the airspeed ISR is pretty well controlled, so not immediately an issue
 //TODO: possible to improve accuracy?  good to +/- 2 us
+//TODO: impliment rollover case
 unsigned long stopwatch_get_time_us(stopwatch_t* stopwatch)
 {
-	unsigned long ticks_us = 0;
-	if (stopwatch->start_ticks != stopwatch->stop_ticks)
-		ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks - 1)*portTICK_RATE_MS*1000;
+//	static unsigned long subtick_period;
+
+
+	// Subtract one because there is almost certainly some subticks contrubuting to the time
+	unsigned long ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks-1)*portTICK_RATE_MS*1000;
 	unsigned long subticks_us = stopwatch_get_subticks(stopwatch)/configCPU_CLOCK_HZ*1000000;
 
-	unsigned long debug = ticks_us + subticks_us;
-	if (debug > 5000)
-		debug = 5000;
 	return ticks_us + subticks_us;
 }

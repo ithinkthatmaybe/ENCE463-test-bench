@@ -5,25 +5,12 @@
  *      Author: sws52
  */
 
-/* Measures time intervals, example:
- *
- *
- * stopwatch_t stopwatch;
- * stopwatch_start(&stopwatch);
- * delay_ms(500);
- * stopwatdh_stop(&stopwacth);
- * unsigned long time_meas = stopwatch_get_time_ms(&stopwatch); //Will return 500
- */
-
 #ifndef STOPWATCH_H_
 #define STOPWATCH_H_
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include "include/FreeRTOS.h"
+#include "include/task.h"
 #include "driverlib/systick.h"
-
-#define STOPWATCH_STARTED 0
-#define STOPWATCH_STOPPED 1
 
 // TODO: stopwatch module
 typedef struct _stopwatch_t{
@@ -31,7 +18,6 @@ typedef struct _stopwatch_t{
 	unsigned long start_subticks;
 	unsigned long stop_ticks;
 	unsigned long stop_subticks;
-	char state;
 } stopwatch_t;
 
 //Test the operation of the stopwatch

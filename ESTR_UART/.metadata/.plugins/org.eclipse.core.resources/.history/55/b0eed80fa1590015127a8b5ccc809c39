@@ -1,0 +1,50 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+A_SRCS += \
+../Luminary/libdriver.a \
+../Luminary/libgr.a 
+
+C_SRCS += \
+../Luminary/heap_2.c \
+../Luminary/port.c \
+../Luminary/rit128x96x4.c \
+../Luminary/ustdlib.c 
+
+OBJS += \
+./Luminary/heap_2.obj \
+./Luminary/port.obj \
+./Luminary/rit128x96x4.obj \
+./Luminary/ustdlib.obj 
+
+C_DEPS += \
+./Luminary/heap_2.pp \
+./Luminary/port.pp \
+./Luminary/rit128x96x4.pp \
+./Luminary/ustdlib.pp 
+
+C_DEPS__QUOTED += \
+"Luminary\heap_2.pp" \
+"Luminary\port.pp" \
+"Luminary\rit128x96x4.pp" \
+"Luminary\ustdlib.pp" 
+
+OBJS__QUOTED += \
+"Luminary\heap_2.obj" \
+"Luminary\port.obj" \
+"Luminary\rit128x96x4.obj" \
+"Luminary\ustdlib.obj" 
+
+C_SRCS__QUOTED += \
+"../Luminary/heap_2.c" \
+"../Luminary/port.c" \
+"../Luminary/rit128x96x4.c" \
+"../Luminary/ustdlib.c" 
+
+A_SRCS__QUOTED += \
+"../Luminary/libdriver.a" \
+"../Luminary/libgr.a" 
+
+
