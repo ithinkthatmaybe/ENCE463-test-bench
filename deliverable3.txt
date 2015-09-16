@@ -1,3 +1,48 @@
+===ESTR_UART===
+
+**OVERVIEW**:
+
+This programs performs a basic test on the  the mirror function of the UUT by sending a "mirror on" character (`), a short message (123) then a mirror off character (') via UART0. 
+The UART0 RX pin is then monitored for the correct response. The test will print PASS on the stellaris screen if it is successful, "Fail wrong received" if an incorect character is 
+received and "Timeout" if no character is received within 1.5 seconds. 
+
+Optionally,  pin G4 on the ESTR can be connected to the reset pin on the UUT. The ESTR will pull this pin low when starting up, ensuring the UUT is reset and in the correct state
+before testing begins. 
+
+**DIRECTIONS**: 
+
+Simply connect the UUT UART pins to the  UART0 pins on the ESTR. Testing begins automatically on startup. 
+
+**ORGANISATION**:
+
+The testing code is made up of three separate tasks which utilyse queues to safely interchange data. One task is dedicated to sending data via UART to the UUT but will later be modified to be used to send data to the PC. Another task is for monitoring received UARt messages from the UUT and again will later be extended to send to the PC as well. The last task is used for keeping track of time. 
+
+Within the UART_ESTR directory there are a number of modules in addition to the standard RTOS and Stellaris library files. The modules were created to help organize aspects of the code according to functionality. The modules were setup so as to be easily extended at a later point.   The addiional modules are:
+
+
+Stopwatch.c and .h   -->This module implements the stopwatch function. This function is also used in the GPIO test.
+
+
+UART.c and .h        -->This module initializes the UART port on the ESTR contains functions that implement 			interupt driven sending and receiving.  
+
+
+uut_gpio.c and .h    -->This module is use for initializing and controlling GPIO pins on the ESTR that directly 			 		interact with the UUT. In this case it is only used for the controlling the reset pin on the 			 		UUT. This code will later be merged with the uut_gpio module used in the GPIO tests. 
+
+Ideally a separate task for displaying messages on the ESTR screen would be implemented but as the ultimate goal is to use the PC for this task the module was not implemented. 
+
+
+**WHAT THE PROGRAM DOES**:
+
+The program starts by running various initializations. Next the three tasks are started. The UART send task then transmits the mirror toggle character then the test message followed by another mirror character. After this data is sent, an 'S' character is sent via a queue to the timeout task. The time out task will then start a watchdog timer. The timer is reset after receiving a character from the UARTreceinging task via the same queue. If the receiving task receives a message via uart it is then compared to the sent message using a call to srtncmp. If the message is correct then the word "passed "will be displayed on the screen. 
+
+The test is fairly basic and represents a work in progress. The test will later be extended to transmit larger messages and will be modigied to send characters without first sending the mirror togling character.    
+
+
+
+
+
+
+
 ===ESTR_GPIO===
 
 System primarily works around uut_gpio.c, the uut_gpio_init() sets up gpio data direction etc before registering 
