@@ -19,3 +19,5 @@ add new:
 NAME: SW_ROOT
 LOCATION: ${ORIGINAL_PROJECT_ROOT}\..\..\..\..
 
+NAME: ORIGINAL_PROJECT_ROOT
+LOCATION: P:\Courses\ENCE361\StellarisWare\boards\ek-lm3s1968\ESTR_project\ccs\
