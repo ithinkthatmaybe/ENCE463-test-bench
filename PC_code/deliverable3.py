@@ -32,8 +32,11 @@ while True:
 	elif test_num not in ["1", "2", "q"]:
 		print "Invalid Entry!"
 	# Load the test onto Stellaris if input is valid.
-	else:
-		_path = os.getcwd() + "/testBins/test{}.bin".format(test_num)
+	elif test_num == "1":
+		_path = os.getcwd() + "/testBins/uart.bin"
+		ESTR.loadTest(_path)
+	elif test_num == "2":
+		_path = os.getcwd() + "/testBins/gpio.bin"
 		ESTR.loadTest(_path)
 	print "\n"
 
