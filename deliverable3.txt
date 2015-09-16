@@ -1,35 +1,96 @@
-
-
 ===ESTR_GPIO===
 
 System primarily works around uut_gpio.c, the uut_gpio_init() sets up gpio data direction etc before registering 
 the airspeed response interrupt and registering an airspeed stimulus task that performs the test. 
 
-The stopwatch module is used to measure response times. one stopwatch instance is used, it is started in the 
-RTOS airspeed task and stopped in the response interrupt. A flag (g_airspeed_response_flag) is also set in the task 
-and reset in the interrupt. This is used to check 1:1 response.  
+test a. requires the uut be stimulated with a varying width varying frequency pulse train with checks to ensure 1:1 response
+and that response latency is within a reasonable limit.
 
-It is expected that the structure of this body will change significantly.
+tests should at some stage push limits and determine the failure point of the 
+uut. With regard to the airspeed system this could happen one of two ways, 
+either the pulse width will become too narrow to be detected by the uut, or 
+the frequency (or pusle to pulse interval) has increased to the point where 
+the uut might not respond in time (ie the interrupt has not been serviced before
+the next arrives). Ultimately the quadrature encoder selected for use would 
+determine which of these failure modes would occur first. If the duty cycle 
+of the encoder was anywhere close to 50% (a logical assumption) the frequency 
+based failure will occur first (this because the response latency of the ISR is significantly 
+larger than the time period required to charge the wire capacitance and for 
+the interrupt to occur). This would essentially dictate that to determine the 
+limit of operation we need to know the minimum pulse-to-pulse interval the 
+system can reliably respond to, this is covered in task b. A more pertinent 
+test would be to simulate normal operation for an extended period
+and ensure that the uut will reliably respond. This is what was implimented. 
 
+The test simulates normal operation by generating a fixed duty cycle waveform 
+and increasing the frequency (this satisfiess the variable pulse width / variable
+ frequency requirement). The frequency increases to a set limit and once reached, 
+resets to a predefined starting frequency. This is done numerous times simply to
+ increase the total number of pulses to which the uut must respond (ie testing 
+long term reliability). The test checks for reasonable latency and 1:1 response 
+as follows. Before raising the pin state, a response flag is set to zero, every 
+time the response ISR is executed, this flag is incremeneted. As such at the end 
+of the cycle, before generating the next rising edge, if the flag does not equal 
+one, the ISR has either not been entered at all, or more than once. Currently 
+the system does not destinguish between missed responses and extra responses, 
+but the total number of 1:1 response failes (the sum of both, missed and 
+extra responses) is displayed at the end of the test. Latency is measured using the
+stopwatch system.
+
+The stopwatch system works uses timing hardware already configured for FreeRTOS 
+and as such offers minimal overhead. FreeRTOS configures and uses the systick 
+timer to maintain a real time clock. The value of this RTC can be accessed with 
+xTaskGetTickCount(). This provides accurate timing for large intervals but with 
+coarse granulatiry. To achieve better accuracy for measuring small intervals the 
+current value of the systick register can also be read. A stopwatch instance is 
+started by storing the tick (xTaskGetTickCount()), and subtick (SystickGetValue()) 
+values in a stopwatch_t instance. After some intervalthe stopwatch will be stopped 
+at which point ticks and subticks will be read again. The interval measured with 
+the stopwatch can then be read with a very high dynamic range by summing the time 
+differences represented each of the recored values of ticks and subticks. This 
+architecture was chosen to provide the best inter-task operability. 
+Ie a stopwatch can be started in a task, stopped in an ISR, and then finally be 
+read in the origional task.
+
+Currently both the stopwatch instance used to measure latency, and the response flag
+are unprotected global variables. At this stage the behavior of the interrupt is 
+reliable and predictable, but as the project develops a more robust system will be required. 
+
+From simply observing the uut ISR execution on a scope, it is apparent that there 
+are two higher priority interrupts occuring, one lasting 1.1uS and the other 20uS. 
+The baseline execution time of the ISR is 16uS, so the maximum expected execution 
+time for the interrupt is 37.1 uS. The lag period before ISR execution starts is 
+also extremely variable, and likely constitutes the primary cause for 1:1 response 
+failure. The minimum pulse-to-pulse interval was set by visually observing the uut 
+response on an oscilloscope and ensuring that the uut would always have adequate time
+to respond to the pulse. As mentioned before this was done to ensure that this test
+would not stress the resonse of the stellaris and simply test reliable operation
+over an extended period.
+
+Currently the structure of the code places a very high weight on the uut_gpio 
+module, which in it's current state would be more aptly named the test_one module. 
+Attempting to make the uut_gpio module impliment functions to perform all the tests 
+(the origional plan) could make it extremely large and confusing, so a better 
+structure can no doubt be attained. Though this will also be largely dependant on 
+what we eventually use as a control method. If we do indeed use a python controller 
+to load the output files for each individual test onto the ESTR, the best structure 
+might be to have a seperate module for each test, with #ifdefs in the main file 
+to controll which tests modules are included and run. 
 
 ===ESTR_UART===
 
 
 ===PC_code===
 This program loads tests on to the Stellaris by using "LM Flash Programmer"
-from Texas Instruments. This loads the .bin files located in "testBins" to
-the Stellaris. "deliverable3.py" assumes that the programmer is installed 
-at "C:\LMFlash.exe". At the moment, uart.bin is the UART test, and gpio.bin 
-is the GPIO test. These .bin files must be copied from the "Debug" folder 
-generated by Code Composer Studio.
+from Texas Instruments. This loads the .bin files located in "testBins". At 
+the moment, test1.bin is the UART test, and test2.bin is the GPIO test.
 
 Inside a while loop, the code asks for the test number and then loads the
-corresponding binary file to the Stellaris. Rinse and repeat. Currently, 
-there is no UART support for deliverable three. 
+corresponding binary file to the Stellaris.
 
-In the future, UART communicatin will be implemented as well as a GUI. A
-schedular may be imported to manage time-irregular UART communications and
-user input. 
+These .bin files must be copied from the "Debug" folder generated by Code 
+Composer Studio. Currently there is no UART support for deliverable three.
+
 
 
 
