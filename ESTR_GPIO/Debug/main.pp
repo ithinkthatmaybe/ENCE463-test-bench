@@ -29,9 +29,10 @@ main.obj: J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h
 main.obj: ../pins.h
 main.obj: ../include/stopwatch.h
 main.obj: ../include/task.h
-main.obj: ../include/uut_gpio.h
+main.obj: ../test_one.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
 main.obj: ../include/task.h
+main.obj: ../stopwatch.h
 
 ../main.c: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
@@ -62,6 +63,7 @@ J:/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h:
 ../pins.h: 
 ../include/stopwatch.h: 
 ../include/task.h: 
-../include/uut_gpio.h: 
+../test_one.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 ../include/task.h: 
+../stopwatch.h: 

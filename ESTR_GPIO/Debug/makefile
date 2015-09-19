@@ -15,7 +15,8 @@ $(GEN_CMDS__FLAG) \
 "./startup_ccs.obj" \
 "./stopwatch.obj" \
 "./tasks.obj" \
-"./uut_gpio.obj" \
+"./test_one.obj" \
+"./test_three.obj" \
 "./portable/heap_2.obj" \
 "./portable/port.obj" \
 "./portable/portasm.obj" \
@@ -156,8 +157,8 @@ ESTR_GPIO.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "uut_gpio.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
-	-$(RM) "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "uut_gpio.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
+	-$(RM) "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "test_one.pp" "test_three.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
+	-$(RM) "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "test_one.obj" "test_three.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
 	-$(RM) "portable\portasm.pp" 
 	-@echo 'Finished clean'
 	-@echo ' '

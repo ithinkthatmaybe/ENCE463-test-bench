@@ -14,7 +14,8 @@ C_SRCS += \
 ../startup_ccs.c \
 ../stopwatch.c \
 ../tasks.c \
-../uut_gpio.c 
+../test_one.c \
+../test_three.c 
 
 OBJS += \
 ./list.obj \
@@ -24,7 +25,8 @@ OBJS += \
 ./startup_ccs.obj \
 ./stopwatch.obj \
 ./tasks.obj \
-./uut_gpio.obj 
+./test_one.obj \
+./test_three.obj 
 
 C_DEPS += \
 ./list.pp \
@@ -34,7 +36,8 @@ C_DEPS += \
 ./startup_ccs.pp \
 ./stopwatch.pp \
 ./tasks.pp \
-./uut_gpio.pp 
+./test_one.pp \
+./test_three.pp 
 
 C_DEPS__QUOTED += \
 "list.pp" \
@@ -44,7 +47,8 @@ C_DEPS__QUOTED += \
 "startup_ccs.pp" \
 "stopwatch.pp" \
 "tasks.pp" \
-"uut_gpio.pp" 
+"test_one.pp" \
+"test_three.pp" 
 
 OBJS__QUOTED += \
 "list.obj" \
@@ -54,7 +58,8 @@ OBJS__QUOTED += \
 "startup_ccs.obj" \
 "stopwatch.obj" \
 "tasks.obj" \
-"uut_gpio.obj" 
+"test_one.obj" \
+"test_three.obj" 
 
 C_SRCS__QUOTED += \
 "../list.c" \
@@ -64,6 +69,7 @@ C_SRCS__QUOTED += \
 "../startup_ccs.c" \
 "../stopwatch.c" \
 "../tasks.c" \
-"../uut_gpio.c" 
+"../test_one.c" \
+"../test_three.c" 
 
 

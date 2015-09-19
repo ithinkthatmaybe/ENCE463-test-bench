@@ -51,7 +51,7 @@
 #include "pins.h"
 
 #include "include/stopwatch.h"
-#include "include/uut_gpio.h"
+#include "test_one.h"
 
 /* Used as a loop counter to create a very crude delay. */
 #define mainDELAY_LOOP_COUNT		( 0xfffff )
@@ -73,12 +73,11 @@ int main( void )
 	whereas some older eval boards used 6MHz. */
 	SysCtlClockSet( SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_8MHZ );
 
+	// Setup ESTR peripherals and register test tasks and ISRs
 	uut_gpio_init();
 
 	// Create ESTR tasks
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
-//	xTaskCreate( vTaskTestStopwatch, "stopwatch test", 240, NULL, 1, NULL);
-
 
 
 	//NOTE: code acts in in place of python test manager, will be removed.
