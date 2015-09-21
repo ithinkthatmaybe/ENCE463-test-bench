@@ -26,30 +26,40 @@
 
 
 // Parameters
-#define TEST_ONE_INIT_PERIOD 3000  //undefined unit
-#define TEST_ONE_MIN_PERIOD 1500   //undefined unit
+#define TEST_ONE_MAX_PERIOD 600  //undefined unit
+#define TEST_ONE_MIN_PERIOD 300   //undefined unit
+#define TEST_ONE_FREQ_STEP 20
 //#define TEST_ONE_NUM_CYCLES 3
-#define TEST_ONE_NUM_PULSES 200
+#define TEST_ONE_NUM_PULSES 5000
 #define TEST_ONE_MAX_RESPONSE_TIME_US 400
 
+#define TEST_TWO_INIT_PERIOD 600
+#define TEST_TWO_MIN_PERIOD 100
+#define TEST_TWO_FREQ_STEP 20
 
-
+#define TEST_THREE_PERIOD 600
 
 
 
 // functions
-void vTaskDisplayResults(void);
-
-void airspeed_pulse_generation(void);
+void test_one_pulse_gen_isr(void);
+void test_two_pulse_gen_isr(void);
+void test_three_pulse_gen_isr(void);
+void test_four_pulse_gen_isr_A(void);
+void test_four_pulse_gen_isr_B(void);
 
 void transponder_pulse_generation(void);
+void airspeed_pulse_generation(void);
 
-void vISRgpio_port_e(void);
+void airspeed_response_isr(void);
+void transponder_response_isr(void);
 
-void vISRgpio_port_c(void);
+void vTaskDisplayResults(void);
 
 void uut_gpio_init(void);
 
-void vTaskStimulateAirspeed(void *pvParameters);
+void uut_gpio_test_one_init(void);
+void uut_gpio_test_two_init(void);
+void uut_gpio_test_three_init(void);
 
 #endif /* TEST_ONE_H_ */

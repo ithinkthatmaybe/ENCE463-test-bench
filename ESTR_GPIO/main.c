@@ -77,15 +77,12 @@ int main( void )
 	RIT128x96x4Init(1000000);
 	RIT128x96x4StringDraw("running... ", 8, 0, 4);
 
-	// Setup ESTR peripherals and register test tasks and ISRs
-	uut_gpio_init();
 
-	// Create ESTR tasks
+//	uut_gpio_test_one_init();
+	uut_gpio_test_two_init();
+//	uut_gpio_test_three_init();
+
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
-
-
-
-
 
 	/* Start the scheduler so our tasks start executing. */
 	IntMasterEnable();
@@ -96,15 +93,14 @@ int main( void )
 	heap available for the idle task to be created. */
 	for( ;; );
 }
-/*--------------------------------------
- * ---------------------*/
+/*-----------------------------------------------------------*/
 
-
+// Flash some reasurance
 void vTaskHeartbeat(void *pvParameters)
 {
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
 	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, STATUS_LED_PG2);
-	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;		// TODO: macro
+	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
 	for (;;)
 	{
 		GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, STATUS_LED_PG2);
