@@ -51,7 +51,7 @@
 #include "pins.h"
 
 #include "include/stopwatch.h"
-#include "test_one.h"
+#include "uut_gpio.h"
 
 /* Used as a loop counter to create a very crude delay. */
 #define mainDELAY_LOOP_COUNT		( 0xfffff )
@@ -73,6 +73,10 @@ int main( void )
 	whereas some older eval boards used 6MHz. */
 	SysCtlClockSet( SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_8MHZ );
 
+	//NOTE: code acts in in place of python test manager, will be removed.
+	RIT128x96x4Init(1000000);
+	RIT128x96x4StringDraw("running... ", 8, 0, 4);
+
 	// Setup ESTR peripherals and register test tasks and ISRs
 	uut_gpio_init();
 
@@ -80,14 +84,7 @@ int main( void )
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
 
 
-	//NOTE: code acts in in place of python test manager, will be removed.
-	RIT128x96x4Init(1000000);
-	RIT128x96x4StringDraw("Press select to ", 8, 0, 4);
-	RIT128x96x4StringDraw("start test", 8, 12, 4);
-	GPIOPinTypeGPIOInput(GPIO_PORTG_BASE, (1<<7));
-	while(GPIOPinRead(GPIO_PORTG_BASE, (1<<7)) == (1<<7)); // wait for button press
-	RIT128x96x4Clear();
-	RIT128x96x4StringDraw("running... ", 8, 0, 4);
+
 
 
 	/* Start the scheduler so our tasks start executing. */
@@ -99,11 +96,14 @@ int main( void )
 	heap available for the idle task to be created. */
 	for( ;; );
 }
-/*-----------------------------------------------------------*/
+/*--------------------------------------
+ * ---------------------*/
 
 
 void vTaskHeartbeat(void *pvParameters)
 {
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, STATUS_LED_PG2);
 	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;		// TODO: macro
 	for (;;)
 	{
