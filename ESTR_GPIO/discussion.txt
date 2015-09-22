@@ -1,0 +1,55 @@
+use a timer for output generation as it means that outputs will be time critical (offering a benefit over a background driven alternative), but also allows for a higher level of control with regard to synchronicity, & number of pulses generated as opposed to using PWM. Using PWM would still equire and interupt be used to start a stopwatch instance.
+
+Using a GPIO triggered ISR to register response. Using a counter would have a disadvantage of not being able to identify the number of misses or double responses reliably, as if both occured in one test run there would be some cancellation.  
+
+
+Current architecture:
+
+A structure that allows an ideal ballance of flexible & reusable while purposefull modules is to use the same functions to perform the required tasks, but for specific tests, modify how these tasks are scheduled or registered. 
+
+
+
+
+Discussion 
+
+	PWM vs TIMER(S)
+
+	calling funcitons from ISRS
+
+	code duality - Transponder / Airspeed reencarnations
+
+
+Developments:
+	
+	- square wave generation 
+		currently the timer interupt is driven at twice the required frequency and performs two funcitons, whereby on the first call, the isr will generate a rising edge, and the second a falling edge. A second interupt could be set up to trigger when the timer reaches the half way point, and this would generate the falling edge. It is felt that this would be a tidier structure. This is because there are several places where extra code is required to accomodate the fact that calls to ..pulse_gen_isr() only generate rising edges every second occurance. 
+
+		(difficulty setting timer match intterupt, seems a timer cannot be configured to do both.) Could potentially setup a second cascaded one shot timer, triggered by the first interrupt that then sets of the second. Though a basic workaround has been to shift the pulse count incrementation and state maintenance to the isr, which is also messy, but everything will work with test 5 now as well
+
+
+	-Foreground capture / background proccessing
+		currently a timer driven periodic foreground task not only generates the stimulus pulses, but also proccesses the measured results from the previous cycle beforehand. This proccessing is not time critical and as the test rig system was extended and foreground proccessing time became more valuble it would likely become very worthwhile to perform this shift. Of course some buffering would be required as it could no longer be guaranteed that the background proccessing task would be able to proccess the results from a pulse before the next one would be generated. 
+
+Circular buffering of a set of stopwatch and response flag instances would be a suitable means to do temporarily store the results for proccessing. Alternatively the system might want to not immediately scuitinise the measured data, but rather relay the recorded measurements back to the PC control system for logging and analysis, as this provides a more flexable system.
+
+
+	-non-reproggramming
+		currently code is compiled to perform a single test but is set up so that it can be compiled to perform any test. Eventually if a larger number of tests were to be performed this could make the testing time excessive due to the re-programming time. The code could be compiled such that any test could be run, and the desired test was selected at run time. Currently init functions are called to setup the tests. Which of these is called is fixed, however this could easily be adjusted so that no test specific init function was run at startup, but instead a background task would wait for a uart request signal from the PC, and this would trigger the calling of a specific test init function. 
+
+It could also be set up such that on the completion of a test, a set of terminitaion functions could unregister the tasks required from the test and return the stellaris to a state where a different test could be initialised, however much the same could be accieved by having the pc simply reset the stellaris. 
+
+	- PC side test parameter modificiation
+		currently test parameters such as period and number of pulses are defined as macros. A better structure would be to allow these to be selected at runtime by the PC. [Elaborate on how]
+
+
+
+TODOS:
+STATISTICS ON LATENCY - test d
+recheck naming
+data dependancies
+look into commonalities in test specific init functions
+look at pulse gen ISR execution time to justify foreground proccessing. 
+Results display/transmission
+preemption?
+
+
