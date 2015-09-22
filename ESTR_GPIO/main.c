@@ -60,6 +60,8 @@
 // prototypes
 void vTaskHeartbeat( void *pvParameters );
 
+void vTaskTestMangement( void *pvParameters ); // not yet implimented
+
 
 /*-----------------------------------------------------------*/
 
@@ -77,10 +79,13 @@ int main( void )
 	RIT128x96x4Init(1000000);
 	RIT128x96x4StringDraw("running... ", 8, 0, 4);
 
+	uut_gpio_init();
 
-//	uut_gpio_test_one_init();
-	uut_gpio_test_two_init();
+	uut_gpio_test_one_init();
+//	uut_gpio_test_two_init();
 //	uut_gpio_test_three_init();
+//	uut_gpio_test_four_init();
+//	uut_gpio_test_five_init();
 
 	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
 

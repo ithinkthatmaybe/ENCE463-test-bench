@@ -81,14 +81,30 @@ void test_three_pulse_gen_isr(void)
 
 void test_four_pulse_gen_isr_A(void)
 {
-	return;
+	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+	airspeed_pulse_generation();
 }
 
 /*-----------------------------------------------------------*/
 
 void test_four_pulse_gen_isr_B(void)
 {
-	return;
+	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+	transponder_pulse_generation();
+}
+
+/*-----------------------------------------------------------*/
+
+// TODO: fix issue, up till now code has worked on the basis
+// that airspeed pulse generation is allways occuring, so
+// I've incremented the pulse counter in there, that falls
+// down here. Best way to fix this is also fix the square
+// wave generation so that each timer ISR generates a rising
+// edge and I can just increment the pulse counter from the isr
+void test_five_pulse_gen_isr(void)
+{
+	TimerIntClear(TIMER0_BASE, TIMER_TIMB_TIMEOUT);
+	transponder_pulse_generation();
 }
 
 /*-----------------------------------------------------------*/
@@ -277,6 +293,7 @@ void uut_gpio_init(void)
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
 
 	// Setup Airspeed & transponder GPIO
 	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2);
@@ -287,61 +304,58 @@ void uut_gpio_init(void)
 
 void uut_gpio_test_one_init(void)
 {
-	uut_gpio_init();
-	// register Airspeed response ISR
+	// Register Airspeed response ISR
 	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
 	//Register pulse generation ISR
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2); //TODO: /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2); //TODO: // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
 	TimerIntRegister(TIMER0_BASE, TIMER_A, test_one_pulse_gen_isr);
 	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerEnable(TIMER0_BASE, TIMER_A);
 
 	// Register background tasks
 	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
-	xTaskCreate( test_one_frequency_mod, "Frequency variation", 1000, NULL, 1, NULL);
+//	xTaskCreate( test_one_frequency_mod, "test one Frequency variation", 1000, NULL, 1, NULL);
 }
 
 void uut_gpio_test_two_init(void)
 {
-	uut_gpio_init();
-	// register Airspeed response ISR
+	// Register Airspeed response ISR
 	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	//Register pulse generation ISR
+	// Register pulse generation ISR
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_TWO_INIT_PERIOD*CYCLES_PER_US/2); //TODO: /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_TWO_INIT_PERIOD*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
 	TimerIntRegister(TIMER0_BASE, TIMER_A, test_two_pulse_gen_isr);
 	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerEnable(TIMER0_BASE, TIMER_A);
 
 	// Register background tasks
 	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
-	xTaskCreate( test_two_frequency_mod, "Frequency variation", 1000, NULL, 1, NULL);
+	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
 }
 
 
 void uut_gpio_test_three_init(void)
 {
-	uut_gpio_init();
-	// register Airspeed response ISR
+	// Register Airspeed response ISR
 	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	//Setup register response ISR
+	// Register Transponder response ISR
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
 	//Register pulse generation ISR
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_THREE_PERIOD*CYCLES_PER_US/2); //TODO: /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_THREE_PERIOD*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
 	TimerIntRegister(TIMER0_BASE, TIMER_A, test_three_pulse_gen_isr);
 	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerEnable(TIMER0_BASE, TIMER_A);
@@ -350,4 +364,48 @@ void uut_gpio_test_three_init(void)
 	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
 }
 
+void uut_gpio_test_four_init(void)
+{
+	// Register Airspeed response ISR
+	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Register Transponder response ISR
+	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	//Register pulse generation ISR A
+	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerIntRegister(TIMER0_BASE, TIMER_A, test_four_pulse_gen_isr_A);
+	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+	TimerEnable(TIMER0_BASE, TIMER_A);
+
+	//Register pulse generation ISR B
+	TimerConfigure(TIMER1_BASE, TIMER_CFG_A_PERIODIC);
+	TimerLoadSet(TIMER1_BASE, TIMER_A, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerIntRegister(TIMER1_BASE, TIMER_A, test_four_pulse_gen_isr_B);
+	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+	TimerEnable(TIMER1_BASE, TIMER_A);
+
+	//Register background tasks
+	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
+}
+
+void uut_gpio_test_five_init(void)
+{
+	// Register Transponder response ISR
+	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	//Register pulse generation ISR A
+	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerIntRegister(TIMER0_BASE, TIMER_A, test_four_pulse_gen_isr_A);
+	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+	TimerEnable(TIMER0_BASE, TIMER_A);
+}
 
