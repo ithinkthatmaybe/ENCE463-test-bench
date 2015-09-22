@@ -406,7 +406,7 @@ void uut_gpio_test_five_init(void)
 
 	//Register pulse generation ISR A
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
+	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FIVE_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
 	TimerIntRegister(TIMER0_BASE, TIMER_A, test_five_pulse_gen_isr);
 	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerEnable(TIMER0_BASE, TIMER_A);

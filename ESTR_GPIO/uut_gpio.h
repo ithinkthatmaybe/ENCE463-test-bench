@@ -31,8 +31,8 @@
 #define TEST_ONE_MAX_PERIOD 600  //undefined unit
 #define TEST_ONE_MIN_PERIOD 300   //undefined unit
 #define TEST_ONE_FREQ_STEP 20
-//#define TEST_ONE_NUM_CYCLES 3
-#define TEST_ONE_NUM_PULSES 5000
+
+#define TEST_ONE_NUM_PULSES 5000	//currently controls the number of pulses for all tests
 #define TEST_ONE_MAX_RESPONSE_TIME_US 400
 
 #define TEST_TWO_INIT_PERIOD 600
@@ -44,32 +44,13 @@
 #define TEST_FOUR_PERIOD_A 600
 #define TEST_FOUR_PERIOD_B 599
 
+#define TEST_FIVE_PERIOD 600
+
 #endif
 
 
 
-// functions
-
-// Timer triggered ISRs
-void test_one_pulse_gen_isr(void);
-void test_two_pulse_gen_isr(void);
-void test_three_pulse_gen_isr(void);
-void test_four_pulse_gen_isr_A(void);
-void test_four_pulse_gen_isr_B(void);
-void test_five_pulse_gen_isr(void);
-
-// Called from above timer triggered ISRs
-void transponder_pulse_generation(void);
-void airspeed_pulse_generation(void);
-
-// GPIO triggered ISRs
-void airspeed_response_isr(void);
-void transponder_response_isr(void);
-
-// Background tasks
-
-void vTaskDisplayResults(void);
-
+// public functions
 void uut_gpio_init(void);
 
 // Test specific initialisation functions
@@ -82,7 +63,7 @@ void uut_gpio_test_five_init(void);
 /*---------------------------------------------------*/
 //				Not Yet Implimented
 
-void vTaskProccessResults(void);
+void vTaskProccessResults(void);	// Private
 
 // Test specific termination functions (run on completion)
 void uut_gpio_test_one_shutdown(void);
