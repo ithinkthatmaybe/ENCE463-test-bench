@@ -28,6 +28,7 @@ int g_trans_overs = 0;
 
 
 int g_airsp_pulse_count = 0;
+int g_trans_pulse_count = 0;
 
 /*-----------------------------------------------------------*/
 
@@ -103,7 +104,7 @@ void test_four_pulse_gen_isr_B(void)
 // edge and I can just increment the pulse counter from the isr
 void test_five_pulse_gen_isr(void)
 {
-	TimerIntClear(TIMER0_BASE, TIMER_TIMB_TIMEOUT);
+	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	transponder_pulse_generation();
 }
 
@@ -153,7 +154,7 @@ void transponder_pulse_generation(void)
 {
 	static int state = 0;	//State variable used to make timer generate a square wave, using a second ISR will be a better solution long term
 
-	if (state == 0 && g_airsp_pulse_count <= TEST_ONE_NUM_PULSES)
+	if (state == 0 && g_trans_pulse_count <= TEST_ONE_NUM_PULSES)
 	{
 		state = 1;
 
@@ -173,6 +174,7 @@ void transponder_pulse_generation(void)
 		}
 
 		// Send next pulse
+		g_trans_pulse_count++;
 		GPIOPinWrite(GPIO_PORTE_BASE, UUT_TRANSPONDER_OUTPUT_PIN_PE0, UUT_TRANSPONDER_OUTPUT_PIN_PE0);
 		stopwatch_start(&g_transponder_stopwatch);
 		g_transponder_response_flag = 0;
@@ -257,7 +259,8 @@ void vTaskDisplayResults(void)
 	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
 	for(;;)
 	{
-		if (g_airsp_pulse_count > TEST_ONE_NUM_PULSES)
+		if (g_airsp_pulse_count > TEST_ONE_NUM_PULSES ||
+				g_trans_pulse_count > TEST_ONE_NUM_PULSES)
 		{
 			RIT128x96x4Clear();
 			char buffer[20] = {0};
@@ -404,8 +407,9 @@ void uut_gpio_test_five_init(void)
 	//Register pulse generation ISR A
 	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
 	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_four_pulse_gen_isr_A);
+	TimerIntRegister(TIMER0_BASE, TIMER_A, test_five_pulse_gen_isr);
 	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 	TimerEnable(TIMER0_BASE, TIMER_A);
+	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
 }
 
