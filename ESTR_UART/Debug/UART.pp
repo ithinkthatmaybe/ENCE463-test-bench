@@ -19,6 +19,9 @@ UART.obj: ../include/portable.h
 UART.obj: ../include/../portable/portmacro.h
 UART.obj: ../include/mpu_wrappers.h
 UART.obj: ../include/queue.h
+UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
+UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h
+UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
 
 ../UART.c: 
 ../UART.h: 
@@ -39,3 +42,6 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h:
 ../include/../portable/portmacro.h: 
 ../include/mpu_wrappers.h: 
 ../include/queue.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 

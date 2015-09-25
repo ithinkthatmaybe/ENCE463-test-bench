@@ -8,6 +8,7 @@ CG_TOOL_ROOT := c:/ti/ccsv6/tools/compiler/arm_5.1.6
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
+"./PC_UART.obj" \
 "./UART.obj" \
 "./list.obj" \
 "./main.obj" \
@@ -145,8 +146,8 @@ FRT.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "UART.pp" "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "uut_gpio.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
-	-$(RM) "UART.obj" "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "uut_gpio.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
+	-$(RM) "PC_UART.pp" "UART.pp" "list.pp" "main.pp" "queue.pp" "rit128x96x4.pp" "startup_ccs.pp" "stopwatch.pp" "tasks.pp" "uut_gpio.pp" "portable\heap_2.pp" "portable\port.pp" "demo_code\basic_io.pp" 
+	-$(RM) "PC_UART.obj" "UART.obj" "list.obj" "main.obj" "queue.obj" "rit128x96x4.obj" "startup_ccs.obj" "stopwatch.obj" "tasks.obj" "uut_gpio.obj" "portable\heap_2.obj" "portable\port.obj" "portable\portasm.obj" "demo_code\basic_io.obj" 
 	-$(RM) "portable\portasm.pp" 
 	-@echo 'Finished clean'
 	-@echo ' '

@@ -7,6 +7,7 @@ CMD_SRCS += \
 ../lm3s1968.cmd 
 
 C_SRCS += \
+../PC_UART.c \
 ../UART.c \
 ../list.c \
 ../main.c \
@@ -18,6 +19,7 @@ C_SRCS += \
 ../uut_gpio.c 
 
 OBJS += \
+./PC_UART.obj \
 ./UART.obj \
 ./list.obj \
 ./main.obj \
@@ -29,6 +31,7 @@ OBJS += \
 ./uut_gpio.obj 
 
 C_DEPS += \
+./PC_UART.pp \
 ./UART.pp \
 ./list.pp \
 ./main.pp \
@@ -40,6 +43,7 @@ C_DEPS += \
 ./uut_gpio.pp 
 
 C_DEPS__QUOTED += \
+"PC_UART.pp" \
 "UART.pp" \
 "list.pp" \
 "main.pp" \
@@ -51,6 +55,7 @@ C_DEPS__QUOTED += \
 "uut_gpio.pp" 
 
 OBJS__QUOTED += \
+"PC_UART.obj" \
 "UART.obj" \
 "list.obj" \
 "main.obj" \
@@ -62,6 +67,7 @@ OBJS__QUOTED += \
 "uut_gpio.obj" 
 
 C_SRCS__QUOTED += \
+"../PC_UART.c" \
 "../UART.c" \
 "../list.c" \
 "../main.c" \
