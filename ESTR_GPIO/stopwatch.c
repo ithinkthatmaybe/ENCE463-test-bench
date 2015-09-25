@@ -15,15 +15,13 @@
 void vTaskTestStopwatch(void)
 {
 	stopwatch_t stopwatch;
-	unsigned long time;
-
 	for(;;)
 	{
 		stopwatch_start(&stopwatch);
 		vTaskDelay(300 / portTICK_RATE_MS);
 		stopwatch_stop(&stopwatch);
 //		vTaskDelay(300);
-		time = stopwatch_get_time_ms(&stopwatch);
+//		time = stopwatch_get_time_ms(&stopwatch);
 
 		// Test reliable tick level operation
 //		unsigned long time;
@@ -46,7 +44,7 @@ void vTaskTestStopwatch(void)
 			for (j = 0; j < 100; j++)
 				continue;
 			stopwatch_stop(&stopwatch);
-			time = stopwatch_get_subticks(&stopwatch);
+//			time = stopwatch_get_subticks(&stopwatch);
 		}
 	}
 }
@@ -77,7 +75,7 @@ void stopwatch_stop(stopwatch_t* stopwatch)
 unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 {
 	unsigned long subticks;
-	if (stopwatch->start_subticks > stopwatch->stop_subticks) //not an overflow overflow
+	if (stopwatch->start_subticks >= stopwatch->stop_subticks) //not an overflow
 		subticks = stopwatch->start_subticks - stopwatch->stop_subticks;
 	else
 	{
@@ -95,17 +93,14 @@ unsigned long stopwatch_get_time_ms(stopwatch_t* stopwatch)
 }
 
 //WARNING: uses a divide operation, do not call from a high frequency ISR!
-//TODO: Fix for data dependancies, currently the airspeed ISR is pretty well controlled, so not immediately an issue
-//TODO: possible to improve accuracy?  good to +/- 2 us
 unsigned long stopwatch_get_time_us(stopwatch_t* stopwatch)
 {
 	unsigned long ticks_us = 0;
-	if (stopwatch->start_ticks != stopwatch->stop_ticks)
-		ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks - 1)*portTICK_RATE_MS*1000;
-	unsigned long subticks_us = stopwatch_get_subticks(stopwatch)/configCPU_CLOCK_HZ*1000000;
+	unsigned long subticks_us = 0;
 
-	unsigned long debug = ticks_us + subticks_us;
-	if (debug > 5000)
-		debug = 5000;
+	if (stopwatch->start_ticks != stopwatch->stop_ticks)
+		ticks_us = (stopwatch->stop_ticks-stopwatch->start_ticks - 1)*portTICK_RATE_MS*1000;	//subtract one as the subticks represent that particular step
+	subticks_us = stopwatch_get_subticks(stopwatch)/50;//configCPU_CLOCK_HZ*1000000;
+
 	return ticks_us + subticks_us;
 }
