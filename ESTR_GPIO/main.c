@@ -43,18 +43,13 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/systick.h" //to read systick register
 #include "driverlib/gpio.h"
-#include "driverlib/interrupt.c"
-
+#include "driverlib/interrupt.h"
 #include "drivers/rit128x96x4.h"
 
-/* specific includes */
-#include "pins.h"
 
+#include "pins.h"
 #include "include/stopwatch.h"
 #include "uut_gpio.h"
-
-/* Used as a loop counter to create a very crude delay. */
-#define mainDELAY_LOOP_COUNT		( 0xfffff )
 
 
 // prototypes
@@ -81,13 +76,15 @@ int main( void )
 
 	uut_gpio_init();
 
-	uut_gpio_test_one_init();
+//	uut_gpio_test_one_init();
 //	uut_gpio_test_two_init();
 //	uut_gpio_test_three_init();
 //	uut_gpio_test_four_init();
-//	uut_gpio_test_five_init();
+	uut_gpio_test_five_init();
 
-	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
+
+
+//	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
 
 	/* Start the scheduler so our tasks start executing. */
 	IntMasterEnable();
