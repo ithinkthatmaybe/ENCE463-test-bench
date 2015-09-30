@@ -11,12 +11,14 @@
 from __future__ import print_function 
 
 # import the class that interfaces with the programmer.
-from load_test import load_test 
+from load_test import Load_test 
 
-from comms import comms
+from comms import Comms
 import Tkinter as tk
 import msvcrt
 import os
+import time
+import threading
 
 
 bool_gui_exited = False
@@ -40,14 +42,14 @@ COMframe.pack()
 editArea.insert(tk.END, "Hello World!\n")
 
 def guiAddText(string):
-    editArea.config(state=tk.NORMAL)
+    #editArea.config(state=tk.NORMAL)
     editArea.insert(tk.END, string)
-    editArea.config(state=tk.DISABLED)
+    #editArea.config(state=tk.DISABLED)
     editArea.see(tk.END)
 
 # Make an object to represent the Stellaris.
-ESTR = load_test()
-COM = comms("COM35", 115200)
+ESTR = Load_test()
+COM = Comms("COM35", 115200)
 
 def printMenu():
 	# Display some instructions
@@ -82,6 +84,8 @@ def interpretCommand(command_chr):
         ESTR.loadTest(_path)
     elif command_chr == "r":
         ESTR.resetESTR()
+        time.sleep(1) # let the ESTR reset
+        COM.sendStr('m')
     elif command_chr =="m":
     	printMenu()
 
@@ -92,26 +96,47 @@ def interpretCommand(command_chr):
 # Display some instructions
 printMenu()
 
+#
+#with x_lock:
+#    statements
+#
+
+quit_event = threading.Event()
+
+
+# Read COM port and add input to GUI
+def readCOM():
+    while True:
+        if COM.inWaiting():
+            s = COM.readChar()
+            guiAddText(s)
+
+# read user input
+def readTUI():
+    while True:
+        if msvcrt.kbhit():
+            user_char = msvcrt.getch()
+            print("{}".format(user_char))
+            #guiAddText("<{}>\n".format(user_char))
+            # Check input to see if user wants to quit.
+            if user_char == "q": 
+                quit_event.set()
+            # Check if input is valid.
+            else:
+                interpretCommand(user_char)
+            print("\nEnter Command: ".format(user_char), end='')
+
+
+readCOMThread = threading.Thread(target=readCOM, name="readCOMThread")
+readCOMThread.daemon = True
+readCOMThread.start()
+readTUIThread = threading.Thread(target=readTUI, name="readTUIThread")
+readTUIThread.daemon = True
+readTUIThread.start()
 
 # Loop around; asking for input from the user.
 print("\nEnter Command: ", end='')
-while True:
-    # Get user input.
-    if msvcrt.kbhit():
-        user_char = msvcrt.getch()
-        print("{}".format(user_char))
-        #guiAddText("<{}>\n".format(user_char))
-        # Check input to see if user wants to quit.
-        if user_char == "q": 
-            break
-        # Check if input is valid.
-        else:
-            interpretCommand(user_char)
-        print("\nEnter Command: ".format(user_char), end='')
-            
-    if COM.inWaiting():
-        s = "{}".format(COM.readChar())
-        guiAddText(s)
+while not quit_event.isSet():
     root.update()
 # Done	
 print("That's all folks!")

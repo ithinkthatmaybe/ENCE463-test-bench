@@ -5,7 +5,7 @@
 #import telnetlib # for interfacing with openOCD.
 import os # For navigating the system.
 
-class load_test(object):
+class Load_test(object):
 
     def __init__(self): # start openOCD, connect to it and configure it.
 		"""Initialise the ESTR object"""
@@ -20,7 +20,10 @@ class load_test(object):
 		string = self.lmflashDirectory + " -q " + self.lmflashQuickSet + " -v -r " + file
 		os.system(string) # instigate command.
 		
-    #def resetESTR(self) # reboot the ESTR.
+    def resetESTR(self): # reboot the ESTR.
+		"""Performs a hardware reset on the connected target device."""
+		string = self.lmflashDirectory + " --hreset"
+		os.system(string) # instigate command.
     #def startESTR(self) # start the ESTR if it has been stopped or paused.
     #def stopESTR(self) # stops the ESTR from running.
     #gdef getDeviceStatus(self) # return the status of the ESTR.
