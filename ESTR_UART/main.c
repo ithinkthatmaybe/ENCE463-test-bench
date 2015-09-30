@@ -17,6 +17,7 @@
 #include "include/FreeRTOS.h"
 #include "include/task.h"
 #include "include/queue.h"
+#include "include/semphr.h"
 
 // Stellaris library includes.
 #include "inc/lm3s1968.h"
@@ -36,7 +37,7 @@
 
 // Test module includes.
 #include "UART.h"
-//#include "PC_UART.h"
+#include "PC_UART.h"
 #include "stopwatch.h"
 #include "uut_gpio.h"
 
@@ -57,7 +58,7 @@
 // Tests:
 // 1 Mirror TX
 // 2 Processor Clock Variation
-int gTest = 1;
+int gTest = 3;
 
 // The task functions.
 void vMirrorTX( void );
@@ -82,6 +83,7 @@ int main( void )
     // Module initialisation functions.
     InitUART();
     InitGPIO ();
+    Init_PC_UART();
 
     //  The first character appears to be ignored by the UUT, so a single character is sent before the
     //  input UART starts to be read.
@@ -89,19 +91,21 @@ int main( void )
 
 	// Create required tasks. First task creation has comments for ease of use.
 
-    // vMirrorTX is test 1a.
-    if (gTest == 1){
-    	xTaskCreate(	vMirrorTX,			/* Pointer to the function that implements the task. */
-    						"Task 1",				/* Text name for the task.  This is to facilitate debugging only. */
-    						240,					/* Stack depth in words. */
-    						NULL,	/* Pass the text to be printed in as the task parameter. */
-    						5,						/* This task will run at priority 1. */
-    						NULL );					/* We are not using the task handle. */
-    } else if (gTest == 2){
-    	// vClockSpeed is test 1d.
-    	xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, NULL );
-    	xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, NULL );
-    }
+    xTaskCreate(Monitor_PC_UART, "Task 5", 240, NULL, 1, NULL );
+//
+//    // vMirrorTX is test 1a.
+//    if (gTest == 1){
+//    	xTaskCreate(	vMirrorTX,			/* Pointer to the function that implements the task. */
+//    						"Task 1",				/* Text name for the task.  This is to facilitate debugging only. */
+//    						240,					/* Stack depth in words. */
+//    						NULL,	/* Pass the text to be printed in as the task parameter. */
+//    						5,						/* This task will run at priority 1. */
+//    						NULL );					/* We are not using the task handle. */
+//    } else if (gTest == 2){
+//    	// vClockSpeed is test 1d.
+//    	xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, NULL );
+//    	xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, NULL );
+//    }
 
 
 
@@ -118,6 +122,54 @@ int main( void )
 	// heap available for the idle task to be created.
 	for( ;; );
 }
+
+/*-----------------------------------------------------------*/
+xQueueHandle xToMonPC;
+xSemaphoreHandle xTestMutex;
+void Monitor_PC_UART()
+{
+	// Monitors the  PC receive queue (UART chanel 0) and prints 10 characters on the screen of the stellaris.
+	// If more than 10 chars are received the screen is reset and printing begins again.
+	char cReceived;
+	xToMonPC = xQueueCreate(5, sizeof(char));
+	xTestMutex = xSemaphoreCreateMutex();
+	if (xTestMutex == NULL)
+	{
+		RIT128x96x4StringDraw("Mutex issue", 5, 20, 30);
+	}
+	for( ;; )
+	{
+
+		if (xCOMMS_FROM_PC_Queue !=0)
+		{
+			if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
+			{
+				if (cReceived == '1')
+				{
+					if (xSemaphoreTake (xTestMutex, (portTickType)100))
+					{
+						xTaskCreate(vMirrorTX, "Task 1", 240, NULL, 5, NULL );
+					}
+									/* We are not using the task handle. */
+				} else if (cReceived == '2')
+				{
+					if (xSemaphoreTake (xTestMutex, (portTickType)100))
+					{
+						xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, NULL );
+						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, NULL );
+					}
+				} else
+				{
+					RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
+				}
+				//xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, NULL );
+			}
+
+		}
+
+	}
+}
+
 /*-----------------------------------------------------------*/
 
 xQueueHandle xToTest;
@@ -204,15 +256,19 @@ void vMirrorTX( void )
 	int len = strlen(mirror);
 	char expect[50] = "ECHO ON123ECHO OFFNACKNACKNACK";
 	int expectedLen = strlen(expect);
-
+	char pass[5] = "Pass";
+	char fail[5] = "Fail";
 	// Variables
 	char strbuff[20] = {0};
 	char * buffer = (char *) malloc (expectedLen);
 
 	char messageSent = 'S';
 	char finished = 'F';
-
-
+	int done = 0;
+	Test_res* results_ptr;
+	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	results.test_type = '1';
+	results_ptr = &results;
 
 	xToTimeout = xQueueCreate(2, sizeof(char));
 	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
@@ -244,20 +300,31 @@ void vMirrorTX( void )
 		mirrorUART(mirror, len, UART1_BASE, expectedLen, buffer);
 		if (strncmp(buffer, expect, expectedLen)==0)
 		{
+
+			results.test_string = pass;
+			results.test_string_len = strlen(results.test_string);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+
 			sprintf(strbuff,"Expected response");
-			//send_results_to_PC((unsigned char *)"YO!!", 4);
 			RIT128x96x4StringDraw(strbuff, 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
-			break;
+			done = 1;
 		} else
 		{
+			results.test_string = fail;
+			results.test_string_len = strlen(results.test_string);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+
 			sprintf(strbuff,"Fail wrong received");
-			//send_results_to_PC((unsigned char *)"YO wrong !!", 11);
 			RIT128x96x4StringDraw(strbuff, 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
-			break;
+			done = 1;
+		}
+		while (done)
+		{
+			vTaskDelay(100);
 		}
 	}
 }
@@ -279,8 +346,15 @@ void vClockSpeed( void )
 	int set = 0;
 	int i = 0;
 	char messageSent = 'S';
-	char finished = 'F';
+	//char finished = 'F';
 	char ended = 'E';
+
+	int done = 0;
+	Test_res* results_ptr;
+	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	results.test_type = '2';
+	results_ptr = &results;
+
 	vTaskDelay(100);
 
 	xToTimeout = xQueueCreate(2, sizeof(char));
@@ -321,6 +395,13 @@ void vClockSpeed( void )
 			set = 1;
 		} else if (set == 1){
 			sprintf(strbuff,"Inc: %d Dec: %d", increases, decreases);
+			int data [2]= {0};
+			data[0] = increases;
+			data[1] = decreases;
+			results.test_data = data;
+			results.num_of_elements = 2;
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+
 			RIT128x96x4StringDraw(strbuff, 5, 20, 30);
 			set = 2;
 		}

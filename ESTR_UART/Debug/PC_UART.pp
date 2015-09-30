@@ -1,6 +1,7 @@
 # FIXED
 
 PC_UART.obj: ../PC_UART.c
+PC_UART.obj: ../PC_UART.h
 PC_UART.obj: ../UART.h
 PC_UART.obj: J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h
 PC_UART.obj: J:/courses/ENEL463/StellarisWare/inc/hw_types.h
@@ -22,9 +23,17 @@ PC_UART.obj: ../include/queue.h
 PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
 PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h
 PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
-PC_UART.obj: ../PC_UART.h
+PC_UART.obj: ../include/task.h
+PC_UART.obj: ../include/list.h
+PC_UART.obj: ../include/semphr.h
+PC_UART.obj: ../include/queue.h
+PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h
+PC_UART.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
+PC_UART.obj: J:/courses/ENEL463/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h
 
 ../PC_UART.c: 
+../PC_UART.h: 
 ../UART.h: 
 J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h: 
 J:/courses/ENEL463/StellarisWare/inc/hw_types.h: 
@@ -46,4 +55,11 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h:
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
-../PC_UART.h: 
+../include/task.h: 
+../include/list.h: 
+../include/semphr.h: 
+../include/queue.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
+J:/courses/ENEL463/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h: 

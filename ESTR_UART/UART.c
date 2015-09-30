@@ -159,8 +159,4 @@ void InitUART (void)
 	 // Ceate required queue for reading from UART
 	 xUARTReadQueue = xQueueCreate(20, sizeof(char));
 
-
-	 xPC_UARTReadQueue = xQueueCreate(20, sizeof(char));
-	 xPC_UARTWriteQueue = xQueueCreate(20, sizeof(char));
-
 }

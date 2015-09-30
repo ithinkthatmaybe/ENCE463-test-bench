@@ -11,6 +11,8 @@ main.obj: ../include/mpu_wrappers.h
 main.obj: ../include/task.h
 main.obj: ../include/list.h
 main.obj: ../include/queue.h
+main.obj: ../include/semphr.h
+main.obj: ../include/queue.h
 main.obj: J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h
 main.obj: J:/courses/ENEL463/StellarisWare/inc/hw_types.h
 main.obj: J:/courses/ENEL463/StellarisWare/inc/hw_memmap.h
@@ -31,6 +33,11 @@ main.obj: ../UART.h
 main.obj: ../include/queue.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
+main.obj: ../PC_UART.h
+main.obj: ../include/task.h
+main.obj: ../include/semphr.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
 main.obj: ../stopwatch.h
 main.obj: ../include/task.h
 main.obj: J:/courses/ENEL463/StellarisWare/driverlib/systick.h
@@ -47,6 +54,8 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h:
 ../include/mpu_wrappers.h: 
 ../include/task.h: 
 ../include/list.h: 
+../include/queue.h: 
+../include/semphr.h: 
 ../include/queue.h: 
 J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h: 
 J:/courses/ENEL463/StellarisWare/inc/hw_types.h: 
@@ -67,6 +76,11 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h:
 ../UART.h: 
 ../include/queue.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
+../PC_UART.h: 
+../include/task.h: 
+../include/semphr.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
 ../stopwatch.h: 
 ../include/task.h: 

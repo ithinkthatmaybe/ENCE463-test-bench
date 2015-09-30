@@ -35,14 +35,8 @@
 
 xQueueHandle xUARTReadQueue;
 
-//****Ben***
-xQueueHandle xPC_UARTWriteQueue;
-xQueueHandle xPC_UARTReadQueue;
-
 //Sends given message over UART0 channel. Requires message and length of message.
 void UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase);
-
-void send_results_to_PC(const unsigned char *outBuffer, unsigned long ulCount);
 
 // Performs mirrors over UART and waits for response length as given by exLen.
 // Pass a | to xUARTReadQueue in order to stop it running, a feature built in as a timeout mechanism.
