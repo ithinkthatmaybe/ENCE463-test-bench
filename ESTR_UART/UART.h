@@ -23,8 +23,8 @@
 #include "include/FreeRTOS.h"
 #include "include/queue.h"
 #include "driverlib/pin_map.h"
-
-//#include "UART.c"
+#include "stdlib.h"
+#include "string.h"
 
 //Definitions from pin_map.h, which isn't being included properly for some reason.
 //ERROR NEEDS FIXING, THIS IS NOT HOW THESE SHOULD BE INCLUDED
@@ -36,7 +36,11 @@
 xQueueHandle xUARTReadQueue;
 
 //Sends given message over UART0 channel. Requires message and length of message.
-void UARTSend(const unsigned char *pucBuffer, unsigned long ulCount);
+void UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase);
+
+// Performs mirrors over UART and waits for response length as given by exLen.
+// Pass a | to xUARTReadQueue in order to stop it running, a feature built in as a timeout mechanism.
+void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned long ulBase, int exLen, char * out);
 
 //Initialises UART0 including all required pins and interrupts for mirror function.
 void InitUART (void);

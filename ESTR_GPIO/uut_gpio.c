@@ -9,182 +9,145 @@
 
 #include "uut_gpio.h"
 
+#include "inc/hw_pwm.h"
+
 #define CYCLES_PER_US (configCPU_CLOCK_HZ/1E6)
 
 // Private globals
+
+
+int g_airspeed_pulse_count = 0;
 stopwatch_t g_airspeed_stopwatch;
-char g_airspeed_response_flag;
+unsigned int g_airspeed_response_flags[TEST_ONE_NUM_PULSES] = {0};
+unsigned int g_airspeed_times[TEST_ONE_NUM_PULSES] = {0};
 
+//int g_airspeed_timeouts = 0;
+//int g_airspeed_misses = 0;
+//int g_airspeed_overs = 0;
+
+
+
+int g_transponder_pulse_count = 0;
 stopwatch_t g_transponder_stopwatch;
-char g_transponder_response_flag;
-
-int g_airspeed_timeouts = 0;
-int g_airspeed_misses = 0;
-int g_airspeed_overs = 0;
-
-int g_trans_timeouts = 0;
-int g_trans_misses = 0;
-int g_trans_overs = 0;
+char g_transponder_response_flags[TEST_ONE_NUM_PULSES] = {0};
+//char g_transponder_response_flag = 0;
+unsigned int g_transponder_times[TEST_ONE_NUM_PULSES] = {0};
+//int g_transponder_timeouts = 0;
+//int g_transponder_misses = 0;
+//int g_transponder_over = 0;
 
 
-int g_airsp_pulse_count = 0;
-int g_trans_pulse_count = 0;
 
-/*-----------------------------------------------------------*/
+// Private function prototypes
 
-void test_one_pulse_gen_isr(void)
+
+// GPIO triggered ISRs
+void airspeed_response_isr(void);
+void transponder_response_isr(void);
+
+// PWM output ISRS
+void airspeed_pulse_isr(void);
+void transponder_pulse_isr(void);
+
+int test_b_output_toggle(void); // called by the below isr to toggle pwm output
+void airspeed_pulse_isr_gpio_test_b(void); // modified airspeed isr for test b
+
+void test_one_frequency_mod(void);
+void test_two_frequency_mod(void);
+
+// void uut_gpio_response_analysis(char response_flag, unsigned int time, int *g_out_misses,
+// 		int *g_out_overs, int *g_out_timeouts);
+
+// Background tasks
+// void vTaskDisplayResults(void);
+
+
+
+
+
+/*=========================ISRs=============================*/
+
+// Upon the PWM rising edge, the current system time is measured, a counter is incremented
+// and the number of pulses generated to that point is checked.
+void airspeed_pulse_isr(void)
 {
-	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	airspeed_pulse_generation();
+	PWMGenIntClear(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+
+	if(g_airspeed_pulse_count >= 1)
+		// Proccess last latency measurement
+		g_airspeed_times[g_airspeed_pulse_count] = stopwatch_get_time_us(&g_airspeed_stopwatch);
+
+	g_airspeed_pulse_count++;
+	stopwatch_start(&g_airspeed_stopwatch);
+
+	if (g_airspeed_pulse_count >= TEST_ONE_NUM_PULSES)
+		PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 }
 
 /*-----------------------------------------------------------*/
 
-void test_two_pulse_gen_isr(void)	// TODO: fix wierdness, looks like it should generate three pulses but it only does two, looks like theres less waits as well
-												// CAUSE: its because only half of the calls to ...pulse_generation() actuall create rising edges
+// Upon the PWM rising edge, the current system time is measured, a counter is incremented
+// and the number of pulses generated to that point is checked.
+void transponder_pulse_isr(void)
 {
-	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	static char currently_pulsing = 1;	// indicates if currently sending a pulse train or waiting
-	static int num_pulses = 0;	// used to control the number of pulses sent in a train
-	static int num_waits = 0;	// used to control the number of cycles to wait before sending another train
+	PWMGenIntClear(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
 
-	if (currently_pulsing)
-	{
-		airspeed_pulse_generation();
-		num_pulses++;
-		if (num_pulses > 3)
-		{
-			currently_pulsing = 0;
-			num_waits = 0;
-		}
-	}
-	else
-	{
-		num_waits++;
-		if (num_waits > 10)	//TODO: make psuedo-random
-		{
-			currently_pulsing = 1;
-			num_pulses = 0;
-		}
-	}
+	if(g_transponder_pulse_count >= 1)
+		g_transponder_times[g_transponder_pulse_count] = stopwatch_get_time_us(&g_transponder_stopwatch);	//TODO: consider if the response hasnt occured
+
+	g_transponder_pulse_count++;
+	stopwatch_start(&g_transponder_stopwatch);
+
+	if (g_transponder_pulse_count >= TEST_ONE_NUM_PULSES)
+		PWMGenDisable(PWM0_BASE, PWM_GEN_2);
 }
 
 /*-----------------------------------------------------------*/
 
-void test_three_pulse_gen_isr(void)
+
+int test_b_output_toggle(void)
 {
-	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	airspeed_pulse_generation();
-	transponder_pulse_generation();
-}
+	static int count = 0;
+	static int state = 0;
 
-/*-----------------------------------------------------------*/
-
-void test_four_pulse_gen_isr_A(void)
-{
-	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	airspeed_pulse_generation();
-}
-
-/*-----------------------------------------------------------*/
-
-void test_four_pulse_gen_isr_B(void)
-{
-	TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-	transponder_pulse_generation();
-}
-
-/*-----------------------------------------------------------*/
-
-// TODO: fix issue, up till now code has worked on the basis
-// that airspeed pulse generation is allways occuring, so
-// I've incremented the pulse counter in there, that falls
-// down here. Best way to fix this is also fix the square
-// wave generation so that each timer ISR generates a rising
-// edge and I can just increment the pulse counter from the isr
-void test_five_pulse_gen_isr(void)
-{
-	TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	transponder_pulse_generation();
-}
-
-/*-----------------------------------------------------------*/
-
-void airspeed_pulse_generation(void)
-{
-	static int state = 0;	//State variable used to make timer generate a square wave, using a second ISR will be a better solution long term
-
-	if (state == 0 && g_airsp_pulse_count <= TEST_ONE_NUM_PULSES)
-	{
-
-		state = 1;
-
-		if(g_airsp_pulse_count >= 1)
-		{
-			// Proccess results from last pulse
-			// make sure the ISR has occured once and only once
-			if (g_airspeed_response_flag == 0)
-				g_airspeed_misses++;
-			if (g_airspeed_response_flag > 1)
-				g_airspeed_overs++;
-
-			// make sure the ISR occured within a reasonable time period of the stimluls
-			unsigned long airs_time = stopwatch_get_time_us(&g_airspeed_stopwatch);
-			if (airs_time >= TEST_ONE_MAX_RESPONSE_TIME_US && g_airspeed_response_flag == 1)
-				g_airspeed_timeouts++;
-		}
-
-		// generate next rising edge
-		g_airsp_pulse_count++;
-		GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, UUT_AIRSPEED_OUTPUT_PIN_PE2);
-		stopwatch_start(&g_airspeed_stopwatch);
-		g_airspeed_response_flag = 0;
-	}
-	else
-	{
-		state = 0;
-		GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);
-	}
-}
-
-
-/*-----------------------------------------------------------*/
-
-void transponder_pulse_generation(void)
-{
-	static int state = 0;	//State variable used to make timer generate a square wave, using a second ISR will be a better solution long term
-
-	if (state == 0 && g_trans_pulse_count <= TEST_ONE_NUM_PULSES)
+	if (count >= 3 && state == 0)
 	{
 		state = 1;
+		count = 0;
 
-		if(g_airsp_pulse_count >= 1)	// TODO: create background task to proccess, as this is lower priority
-		{
-			// Proccess results from last pulse
-			// make sure the ISR has occured once and only once
-			if (g_transponder_response_flag == 0)
-				g_trans_misses++;
-			if (g_transponder_response_flag > 1)
-				g_trans_overs++;
-
-			// make sure the ISR occured within a reasonable time period of the stimluls
-			unsigned long trans_time = stopwatch_get_time_us(&g_transponder_stopwatch);
-			if (trans_time >= TEST_ONE_MAX_RESPONSE_TIME_US && g_transponder_response_flag == 1)
-				g_trans_timeouts++;
-		}
-
-		// Send next pulse
-		g_trans_pulse_count++;
-		GPIOPinWrite(GPIO_PORTE_BASE, UUT_TRANSPONDER_OUTPUT_PIN_PE0, UUT_TRANSPONDER_OUTPUT_PIN_PE0);
-		stopwatch_start(&g_transponder_stopwatch);
-		g_transponder_response_flag = 0;
-
+		PWMOutputState(PWM0_BASE, PWM_GEN_1_BIT, 0); //Disable PWM output
 	}
-	else
+	else if (count > 10 && state == 1)
 	{
 		state = 0;
-		GPIOPinWrite(GPIO_PORTE_BASE, UUT_TRANSPONDER_OUTPUT_PIN_PE0, ~UUT_TRANSPONDER_OUTPUT_PIN_PE0);
+		count = 0;
+
+		PWMOutputState(PWM0_BASE, PWM_GEN_1_BIT, 1); // Reenable output
 	}
+
+	count++;
+	return state;
+}
+
+// Save as the first airspeed pulse gen ISR as above, however
+// The PWM module is disabled after 3 pulses are generated
+void airspeed_pulse_isr_gpio_test_b(void)
+{
+	PWMGenIntClear(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+
+
+
+	if(g_airspeed_pulse_count >= 1)
+		// Proccess last latency measurement
+		g_airspeed_times[g_airspeed_pulse_count] = stopwatch_get_time_us(&g_airspeed_stopwatch);
+
+	// Increment the pulse count if output is currently enabled and disable output
+	// if two pulses have been generated
+	g_airspeed_pulse_count += test_b_output_toggle();
+	stopwatch_start(&g_airspeed_stopwatch);
+
+	if (g_airspeed_pulse_count >= TEST_ONE_NUM_PULSES)
+		PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 }
 
 /*-----------------------------------------------------------*/
@@ -194,8 +157,7 @@ void airspeed_response_isr(void)
 {
 	GPIOPinIntClear(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	stopwatch_stop(&g_airspeed_stopwatch);	// TODO: protect stopwatch with mutex?
-	g_airspeed_response_flag++;
-//	GPIOPinWrite(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2, ~UUT_AIRSPEED_OUTPUT_PIN_PE2);	//TODO: move this line (helpful much?) meaning set this low somewhere else so we dont get stuck if the uut misses one (hackishly fixed)
+	g_airspeed_response_flags[g_airspeed_pulse_count]++;
 }
 
 /*-----------------------------------------------------------*/
@@ -205,8 +167,24 @@ void transponder_response_isr(void)	//TODO: fix names
 {
 	GPIOPinIntClear(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 	stopwatch_stop(&g_transponder_stopwatch);
-	g_transponder_response_flag++;
-//	GPIOPinWrite(GPIO_PORTE_BASE, UUT_TRANSPONDER_OUTPUT_PIN_PE0, ~UUT_TRANSPONDER_OUTPUT_PIN_PE0);
+	g_transponder_response_flags[g_transponder_pulse_count]++;
+}
+
+/*===================BACKGROUND TASKS========================*/
+
+
+void uut_gpio_response_analysis(char response_flag, unsigned int time, int *g_out_misses,
+		int *g_out_overs, int *g_out_timeouts)
+{
+	// make sure the ISR has occured once and only once
+	if (response_flag == 0)
+		++*g_out_misses;
+	if (response_flag > 1)
+		*g_out_overs += response_flag - 1;
+	// make sure the ISR occured within a reasonable time period of the stimluls
+
+	if (time >= TEST_ONE_MAX_RESPONSE_TIME_US && response_flag == 1)
+		++*g_out_timeouts;
 }
 
 /*-----------------------------------------------------------*/
@@ -230,7 +208,8 @@ void test_one_frequency_mod(void)
 			if (period > TEST_ONE_MAX_PERIOD)
 				direction = 0;
 		}
-		TimerLoadSet(TIMER0_BASE, TIMER_A, period*CYCLES_PER_US/2);
+		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
 		vTaskDelay(iTaskDelayPeriod);
 	}
 }
@@ -247,45 +226,48 @@ void test_two_frequency_mod(void)
 		{
 			period -= TEST_TWO_FREQ_STEP;
 		}
-		TimerLoadSet(TIMER0_BASE, TIMER_A, period*CYCLES_PER_US/2);
+
+		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
 		vTaskDelay(iTaskDelayPeriod);
 	}
 }
+
 
 /*-----------------------------------------------------------*/
 
-void vTaskDisplayResults(void)
-{
-	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
-	for(;;)
-	{
-		if (g_airsp_pulse_count > TEST_ONE_NUM_PULSES ||
-				g_trans_pulse_count > TEST_ONE_NUM_PULSES)
-		{
-			RIT128x96x4Clear();
-			char buffer[20] = {0};
-			sprintf(buffer, "Test finished. /%d", (int)TEST_ONE_NUM_PULSES);
-			RIT128x96x4StringDraw(buffer, 8, 10, 4);
-			sprintf(buffer, "%d missed responses", (int)g_airspeed_misses);
-			RIT128x96x4StringDraw(buffer, 8, 20, 4);
-			sprintf(buffer, "%d extra responses", (int)g_airspeed_overs);
-			RIT128x96x4StringDraw(buffer, 8, 30, 4);
-			sprintf(buffer, "%d timeouts", (int)g_airspeed_timeouts);
-			RIT128x96x4StringDraw(buffer, 8, 40, 4);
-
-			sprintf(buffer, "%d missed responses", (int)g_trans_misses);
-			RIT128x96x4StringDraw(buffer, 8, 60, 4);
-			sprintf(buffer, "%d extra responses", (int)g_trans_overs);
-			RIT128x96x4StringDraw(buffer, 8, 70, 4);
-			sprintf(buffer, "%d timeouts", (int)g_trans_timeouts);
-			RIT128x96x4StringDraw(buffer, 8, 80, 4);
-
-			TimerDisable(TIMER0_BASE, TIMER_A);	//todo: create post test task to unregester interrupts etc
-			while(1);
-		}
-		vTaskDelay(iTaskDelayPeriod);
-	}
-}
+//void vTaskDisplayResults(void)
+//{
+//	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
+//	for(;;)
+//	{
+//		if (g_airspeed_pulse_count >= TEST_ONE_NUM_PULSES ||
+//				g_transponder_pulse_count >= TEST_ONE_NUM_PULSES)
+//		{
+//			RIT128x96x4Clear();
+//			char buffer[20] = {0};
+//			sprintf(buffer, "Test finished. /%d", (int)TEST_ONE_NUM_PULSES);
+//			RIT128x96x4StringDraw(buffer, 8, 10, 4);
+//			sprintf(buffer, "%d missed responses", (int)g_airspeed_misses);
+//			RIT128x96x4StringDraw(buffer, 8, 20, 4);
+//			sprintf(buffer, "%d extra responses", (int)g_airspeed_overs);
+//			RIT128x96x4StringDraw(buffer, 8, 30, 4);
+//			sprintf(buffer, "%d latency fials", (int)g_airspeed_timeouts);
+//			RIT128x96x4StringDraw(buffer, 8, 40, 4);
+//
+//			sprintf(buffer, "%d missed responses", (int)g_transponder_misses);
+//			RIT128x96x4StringDraw(buffer, 8, 60, 4);
+//			sprintf(buffer, "%d extra responses", (int)g_transponder_over);
+//			RIT128x96x4StringDraw(buffer, 8, 70, 4);
+//			sprintf(buffer, "%d latency fails", (int)g_transponder_timeouts);
+//			RIT128x96x4StringDraw(buffer, 8, 80, 4);
+//
+//			TimerDisable(TIMER0_BASE, TIMER_A);	//todo: create post test task to unregester interrupts etc
+//			while(1);
+//		}
+//		vTaskDelay(iTaskDelayPeriod);
+//	}
+//}
 
 /*-----------------------------------------------------------*/
 
@@ -293,14 +275,19 @@ void vTaskDisplayResults(void)
 // and task regestration will be split off
 void uut_gpio_init(void)
 {
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0 | SYSCTL_PERIPH_PWM);
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);	// airspeed output
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);	// transponder output
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);	// airspeed response pin
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);	// transponder response pin
 
 	// Setup Airspeed & transponder GPIO
-	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, UUT_AIRSPEED_OUTPUT_PIN_PE2);
-	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, UUT_TRANSPONDER_OUTPUT_PIN_PE0);
+	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
+	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
+
 	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 }
@@ -312,15 +299,20 @@ void uut_gpio_test_one_init(void)
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	//Register pulse generation ISR
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2); //TODO: // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_one_pulse_gen_isr);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER0_BASE, TIMER_A);
+	// Airspeed pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
+
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
 
 	// Register background tasks
-	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
 //	xTaskCreate( test_one_frequency_mod, "test one Frequency variation", 1000, NULL, 1, NULL);
 }
 
@@ -331,18 +323,21 @@ void uut_gpio_test_two_init(void)
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	// Register pulse generation ISR
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_TWO_INIT_PERIOD*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_two_pulse_gen_isr);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER0_BASE, TIMER_A);
+	// Airspeed pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
 
-	// Register background tasks
-	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
-	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
+
+//	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
 }
-
 
 void uut_gpio_test_three_init(void)
 {
@@ -351,20 +346,37 @@ void uut_gpio_test_three_init(void)
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	// Register Transponder response ISR
+	// Airspeed pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_THREE_PERIOD*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_THREE_PERIOD*CYCLES_PER_US/2);
+
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+
+
+
+    //Register Transponder response ISR
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	//Register pulse generation ISR
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_THREE_PERIOD*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_three_pulse_gen_isr);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER0_BASE, TIMER_A);
+	// Transponder pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
 
-	// Register background tasks
-	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_THREE_PERIOD*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_THREE_PERIOD*CYCLES_PER_US/2);
+
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
 }
 
 void uut_gpio_test_four_init(void)
@@ -374,42 +386,61 @@ void uut_gpio_test_four_init(void)
 	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	// Register Transponder response ISR
+	// Airspeed pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_FOUR_PERIOD_A*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2);
+
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
+
+    //Register Transponder response ISR
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	//Register pulse generation ISR A
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_four_pulse_gen_isr_A);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER0_BASE, TIMER_A);
+	// Transponder pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
 
-	//Register pulse generation ISR B
-	TimerConfigure(TIMER1_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER1_BASE, TIMER_A, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER1_BASE, TIMER_A, test_four_pulse_gen_isr_B);
-	TimerIntEnable(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER1_BASE, TIMER_A);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
 
-	//Register background tasks
-	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
 }
 
 void uut_gpio_test_five_init(void)
 {
-	// Register Transponder response ISR
+	//Register Transponder response ISR
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
 	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	//Register pulse generation ISR A
-	TimerConfigure(TIMER0_BASE, TIMER_CFG_A_PERIODIC);
-	TimerLoadSet(TIMER0_BASE, TIMER_A, TEST_FIVE_PERIOD_A*CYCLES_PER_US/2); // /2 comes from the way we generate the square wave, ie two ISRs per one cycle
-	TimerIntRegister(TIMER0_BASE, TIMER_A, test_five_pulse_gen_isr);
-	TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-	TimerEnable(TIMER0_BASE, TIMER_A);
-	xTaskCreate( vTaskDisplayResults, "Finished", 1000, NULL, 1, NULL);
+	// Transponder pulse generation
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
+
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
 }
+
+
+
 
