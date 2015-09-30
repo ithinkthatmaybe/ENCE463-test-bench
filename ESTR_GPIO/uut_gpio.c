@@ -9,11 +9,11 @@
 
 #include "uut_gpio.h"
 
-#include "inc/hw_pwm.h"
+
 
 #define CYCLES_PER_US (configCPU_CLOCK_HZ/1E6)
 
-// Private globals
+
 
 
 int g_airspeed_pulse_count = 0;
@@ -30,30 +30,15 @@ unsigned int g_airspeed_times[TEST_ONE_NUM_PULSES] = {0};
 int g_transponder_pulse_count = 0;
 stopwatch_t g_transponder_stopwatch;
 char g_transponder_response_flags[TEST_ONE_NUM_PULSES] = {0};
-//char g_transponder_response_flag = 0;
 unsigned int g_transponder_times[TEST_ONE_NUM_PULSES] = {0};
+
 //int g_transponder_timeouts = 0;
 //int g_transponder_misses = 0;
 //int g_transponder_over = 0;
 
 
 
-// Private function prototypes
-
-
-// GPIO triggered ISRs
-void airspeed_response_isr(void);
-void transponder_response_isr(void);
-
-// PWM output ISRS
-void airspeed_pulse_isr(void);
-void transponder_pulse_isr(void);
-
-int test_b_output_toggle(void); // called by the below isr to toggle pwm output
-void airspeed_pulse_isr_gpio_test_b(void); // modified airspeed isr for test b
-
-void test_one_frequency_mod(void);
-void test_two_frequency_mod(void);
+// PROTOTYPES
 
 // void uut_gpio_response_analysis(char response_flag, unsigned int time, int *g_out_misses,
 // 		int *g_out_overs, int *g_out_timeouts);
@@ -63,9 +48,8 @@ void test_two_frequency_mod(void);
 
 
 
-
-
 /*=========================ISRs=============================*/
+
 
 // Upon the PWM rising edge, the current system time is measured, a counter is incremented
 // and the number of pulses generated to that point is checked.
@@ -271,175 +255,175 @@ void test_two_frequency_mod(void)
 
 /*-----------------------------------------------------------*/
 
-// TODO: will become test one init, or will just setup pins etc
-// and task regestration will be split off
-void uut_gpio_init(void)
-{
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0 | SYSCTL_PERIPH_PWM);
-	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);	// airspeed output
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);	// transponder output
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);	// airspeed response pin
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);	// transponder response pin
-
-	// Setup Airspeed & transponder GPIO
-	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
-	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
-
-	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-}
-
-void uut_gpio_test_one_init(void)
-{
-	// Register Airspeed response ISR
-	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Airspeed pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-
-
-	// Register background tasks
-//	xTaskCreate( test_one_frequency_mod, "test one Frequency variation", 1000, NULL, 1, NULL);
-}
-
-void uut_gpio_test_two_init(void)
-{
-	// Register Airspeed response ISR
-	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Airspeed pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-
-
-//	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
-}
-
-void uut_gpio_test_three_init(void)
-{
-	// Register Airspeed response ISR
-	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Airspeed pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_THREE_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_THREE_PERIOD*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
-
-
-
-
-    //Register Transponder response ISR
-	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Transponder pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_THREE_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_THREE_PERIOD*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-}
-
-void uut_gpio_test_four_init(void)
-{
-	// Register Airspeed response ISR
-	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Airspeed pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_FOUR_PERIOD_A*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-
-
-    //Register Transponder response ISR
-	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Transponder pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-}
-
-void uut_gpio_test_five_init(void)
-{
-	//Register Transponder response ISR
-	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Transponder pulse generation
-	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
-
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
-
-	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
-}
+//// TODO: will become test one init, or will just setup pins etc
+//// and task regestration will be split off
+//void uut_gpio_init(void)
+//{
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0 | SYSCTL_PERIPH_PWM);
+//	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+//
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);	// airspeed output
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);	// transponder output
+//
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);	// airspeed response pin
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);	// transponder response pin
+//
+//	// Setup Airspeed & transponder GPIO
+//	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
+//	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
+//
+//	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+//	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+//}
+//
+//void uut_gpio_test_one_init(void)
+//{
+//	// Register Airspeed response ISR
+//	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+//
+//	// Airspeed pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+//
+//
+//	// Register background tasks
+////	xTaskCreate( test_one_frequency_mod, "test one Frequency variation", 1000, NULL, 1, NULL);
+//}
+//
+//void uut_gpio_test_two_init(void)
+//{
+//	// Register Airspeed response ISR
+//	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+//
+//	// Airspeed pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+//
+//
+////	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
+//}
+//
+//void uut_gpio_test_three_init(void)
+//{
+//	// Register Airspeed response ISR
+//	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+//
+//	// Airspeed pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_THREE_PERIOD*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_THREE_PERIOD*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+//
+//
+//
+//
+//    //Register Transponder response ISR
+//	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+//
+//	// Transponder pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_THREE_PERIOD*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_THREE_PERIOD*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+//}
+//
+//void uut_gpio_test_four_init(void)
+//{
+//	// Register Airspeed response ISR
+//	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+//
+//	// Airspeed pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_FOUR_PERIOD_A*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+//
+//
+//    //Register Transponder response ISR
+//	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+//
+//	// Transponder pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+//}
+//
+//void uut_gpio_test_five_init(void)
+//{
+//	//Register Transponder response ISR
+//	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+//	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+//	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+//
+//	// Transponder pulse generation
+//	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+//	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+//
+//	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
+//	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
+//
+//	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
+//	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+//
+//	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+//	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+//}
 
 
 

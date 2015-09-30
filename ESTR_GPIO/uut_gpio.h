@@ -15,6 +15,7 @@
 
 #include "inc\hw_memmap.h"
 #include "inc\hw_types.h"
+#include "inc\hw_pwm.h"
 
 #include "driverlib/timer.h"
 #include "driverlib/sysctl.h"
@@ -50,27 +51,19 @@
 #endif
 
 
+void airspeed_response_isr(void);
+void transponder_response_isr(void);
 
-// public functions
-void uut_gpio_init(void);
+// PWM output ISRS
+void airspeed_pulse_isr(void);
+void transponder_pulse_isr(void);
 
-// Test specific initialisation functions
-void uut_gpio_test_one_init(void);
-void uut_gpio_test_two_init(void);
-void uut_gpio_test_three_init(void);
-void uut_gpio_test_four_init(void);
-void uut_gpio_test_five_init(void);
+int test_b_output_toggle(void); // called by the below isr to toggle pwm output
+void airspeed_pulse_isr_gpio_test_b(void); // modified airspeed isr for test b
 
-/*---------------------------------------------------*/
-//				Not Yet Implimented
+void test_one_frequency_mod(void);
+void test_two_frequency_mod(void);
 
-void vTaskProccessResults(void);	// Private
 
-// Test specific termination functions (run on completion)
-void uut_gpio_test_one_shutdown(void);
-void uut_gpio_test_two_shutdown(void);
-void uut_gpio_test_three_shutdown(void);
-void uut_gpio_test_four_shutdown(void);
-void uut_gpio_test_five_shutdown(void);
 
 #endif /* TEST_ONE_H_ */
