@@ -60,7 +60,7 @@ void Init_PC_UART (void)
 	 xCOMMS_FROM_PC_Queue = xQueueCreate(20, sizeof(char));
 	 // create pc sending task
 	 xTaskCreate(send_results_to_PC, "Task 4", 240, NULL, 1, NULL );
-
+	 vSemaphoreCreateBinary( xPC_SENT );
 	 // used for displaying text from PC sent by UART. For testing purposes only
 
 
@@ -101,12 +101,15 @@ void send_results_to_PC()
 	char charbuff[10];
 	struct Test_results*  results;
 
+	int sent = 0;
+
 	while (1)
 	{	// checks if queue exists
 		if (xSEND_RESULTS_Queue !=0)
 		{
 			while (xQueueReceive(xSEND_RESULTS_Queue, &(results), (portTickType)10))
 			{
+				sent = 1;
 				UARTCharPutNonBlocking(UART0_BASE, (*results).test_type);
 				// semi colon used to indicate start of data array
 				UARTCharPutNonBlocking(UART0_BASE, ';');
@@ -146,6 +149,11 @@ void send_results_to_PC()
 					UARTSend(";", 1,UART0_BASE );
 
 				}
+			}
+			if (sent == 1)
+			{
+				sent = 0;
+				xSemaphoreGive(xPC_SENT);
 			}
 		}
 	}
