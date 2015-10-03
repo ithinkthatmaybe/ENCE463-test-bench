@@ -157,6 +157,6 @@ void InitUART (void)
 	 UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
 
 	 // Ceate required queue for reading from UART
-	 xUARTReadQueue = xQueueCreate(20, sizeof(char));
+	 xUARTReadQueue = xQueueCreate(40, sizeof(char));
 
 }
