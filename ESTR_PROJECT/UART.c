@@ -39,25 +39,32 @@ UARTIntHandler(void)
 void
 UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase)
 {
+	int i = 0;
     // Loop while there are more characters to send.
     while(ulCount--)
     {
         // Write the next character to the UART.
         UARTCharPutNonBlocking(ulBase, *pucBuffer++);
+        // Delay in order to be able to send long strings over UART.
+        while (i < 1000)
+        {
+        	i++;
+        }
+        i = 0;
     }
 }
 
-
+// Performs a mirror test.
 void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned long ulBase, int exLen, char * out)
 {
 	// Variables
-
 	int len = ulCount;
-	int j = 0;
+	int charsSent = 0;
 	unsigned char * prev = mirrorMessage;
 	char cReceived;
 	int i = 0;
-	char * buffer = (char *) malloc (exLen);
+	int j = 0;
+	char * buffer = (char *) calloc (exLen, sizeof(char)); // Temporary buffer for results.
 	int waiting = 0;
 	int done = 0;
 
@@ -65,25 +72,27 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 	{
 		if (!waiting)
 		{
-			while (j < len)
+			while (charsSent < len)
 			{
-				if (mirrorMessage[j] == '`')
+				// Split messages around ` characters, as the UUT takes a small amount of time to change mode.
+				if (mirrorMessage[charsSent] == '`')
 				{
-					if (j > 0)
+					if (charsSent > 0)
 					{
-						UARTSend((unsigned char *)prev, &mirrorMessage[j] - prev, UART1_BASE);
+						UARTSend((unsigned char *)prev, &mirrorMessage[charsSent] - prev, UART1_BASE);
 					}
 					UARTSend((unsigned char *)"`", sizeof(char), UART1_BASE);
-					j++;
-					prev = &mirrorMessage[j];
+					charsSent++;
+					prev = &mirrorMessage[charsSent];
 					break;
 				}
-				j++;
+				charsSent++;
 			}
-			if (j == len)
+			if (charsSent == len)
 			{
-				UARTSend((unsigned char *)prev, &mirrorMessage[j] - prev, UART1_BASE);
-				j++;
+				// This sends the last portion of the message when the message does not end with a `.
+				UARTSend((unsigned char *)prev, &mirrorMessage[charsSent] - prev, UART1_BASE);
+				charsSent++;
 			}
 			waiting = 1;
 		}
@@ -93,17 +102,20 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 			{
 				while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
 				{
-					if (cReceived == '|')
+					if (cReceived == '|') // Timeout character. Finish test.
 					{
 						done = 1;
+						while (j < exLen){
+							*(out+j) = buffer[j];
+							j++;
+						}
 						break;
 					}
 					buffer[i++] = cReceived;
 					waiting = 0;
 
-					if (i == exLen)
+					if (i == exLen) // Message received. Write message to results.
 					{
-						j = 0;
 						while (j < i){
 							*(out+j) = buffer[j];
 							j++;

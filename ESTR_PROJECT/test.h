@@ -23,6 +23,8 @@ void vClockSpeed( void );
 xTaskHandle xClockSpeed;
 void vTimeout( void );
 xTaskHandle xTimeout;
+void vStatus( void );
+xTaskHandle xStatus;
 
 xQueueHandle xToTest;
 xQueueHandle xToTimeout;

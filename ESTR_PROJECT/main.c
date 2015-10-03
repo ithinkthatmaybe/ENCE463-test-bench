@@ -55,15 +55,6 @@ void Test_Manager(void);
 
 int main( void )
  {
-	// Set the clocking to run from the PLL at 50 MHz.  Assumes 8MHz XTAL,
-	// whereas some older eval boards used 6MHz.
-	SysCtlClockSet( SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_8MHZ );
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
-	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_2);
-	IntMasterEnable();
-    // Initialize the OLED display and write status.
-    RIT128x96x4Init(1000000);
-    RIT128x96x4StringDraw("UART Mirror", 36, 0, 15);
 
     // Test initialisation function.
     test_init();
@@ -94,7 +85,7 @@ void Test_Manager()
 	char cReceived;
 
 	// State list for test manager.
-	typedef enum states {IDLE, TEST1, TEST2} CurrState;
+	typedef enum states {IDLE, TEST1, TEST2, TEST3, TEST4} CurrState;
 	CurrState state = IDLE;
 
 	xTestMutex = xSemaphoreCreateMutex();
@@ -120,10 +111,14 @@ void Test_Manager()
 					{
 						test_uart_a_startup();
 						state = TEST1;
-					} else if (cReceived == '2') //Command to run test 2.
+					} else if (cReceived == '3') //Command to run test 3.
+					{
+						test_uart_c_startup();
+						state = TEST3;
+					} else if (cReceived == '4') //Command to run test 4.
 					{
 						test_uart_d_startup();
-						state = TEST2;
+						state = TEST4;
 					} else
 					{
 						RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
@@ -141,7 +136,14 @@ void Test_Manager()
 				test_uart_a_shutdown();
 				state = IDLE;
 			}
-		} else if (state == TEST2) //Test 2 is running.
+		} else if (state == TEST3) //Test 3 is running.
+		{
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_uart_c_shutdown();
+				state = IDLE;
+			}
+		} else if (state == TEST4) //Test 4 is running.
 		{
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
