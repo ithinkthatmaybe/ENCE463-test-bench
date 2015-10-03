@@ -29,15 +29,7 @@ main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h
 main.obj: J:/courses/ENEL463/StellarisWare/inc/hw_ints.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
-main.obj: ../UART.h
-main.obj: ../include/queue.h
-main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
-main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
-main.obj: ../PC_UART.h
-main.obj: ../include/task.h
-main.obj: ../include/semphr.h
-main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
-main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
+main.obj: ../test.h
 main.obj: ../stopwatch.h
 main.obj: ../include/task.h
 main.obj: J:/courses/ENEL463/StellarisWare/driverlib/systick.h
@@ -49,6 +41,15 @@ main.obj: J:/courses/ENEL463/StellarisWare/driverlib/timer.h
 main.obj: J:/courses/ENEL463/StellarisWare/driverlib/pwm.h
 main.obj: ../pins.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: ../UART.h
+main.obj: ../include/queue.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
+main.obj: ../PC_UART.h
+main.obj: ../include/task.h
+main.obj: ../include/semphr.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
 
 ../main.c: 
 ../include/FreeRTOS.h: 
@@ -79,15 +80,7 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h:
 J:/courses/ENEL463/StellarisWare/inc/hw_ints.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
-../UART.h: 
-../include/queue.h: 
-c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
-c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
-../PC_UART.h: 
-../include/task.h: 
-../include/semphr.h: 
-c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
-c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
+../test.h: 
 ../stopwatch.h: 
 ../include/task.h: 
 J:/courses/ENEL463/StellarisWare/driverlib/systick.h: 
@@ -99,3 +92,12 @@ J:/courses/ENEL463/StellarisWare/driverlib/timer.h:
 J:/courses/ENEL463/StellarisWare/driverlib/pwm.h: 
 ../pins.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
+../UART.h: 
+../include/queue.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
+../PC_UART.h: 
+../include/task.h: 
+../include/semphr.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 

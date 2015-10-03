@@ -37,6 +37,12 @@ test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_ints.h
 test.obj: ../include/queue.h
 test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h
 test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
+test.obj: ../PC_UART.h
+test.obj: ../include/task.h
+test.obj: ../include/semphr.h
+test.obj: ../include/queue.h
+test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h
 
 ../test.c: 
 ../test.h: 
@@ -74,4 +80,10 @@ J:/courses/ENEL463/StellarisWare/driverlib/uart.h:
 J:/courses/ENEL463/StellarisWare/inc/hw_ints.h: 
 ../include/queue.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdlib.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 
+../PC_UART.h: 
+../include/task.h: 
+../include/semphr.h: 
+../include/queue.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h: 

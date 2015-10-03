@@ -11,12 +11,21 @@
 #include "stopwatch.h"
 #include "uut_gpio.h"
 #include "UART.h" //uut_uart
-
+#include "PC_UART.h"
 
 void test_init(void); // Enable and configure peripherals used for testing
 
 /// UART tests
 
+void vMirrorTX( void );
+xTaskHandle xMirrorTX;
+void vClockSpeed( void );
+xTaskHandle xClockSpeed;
+void vTimeout( void );
+xTaskHandle xTimeout;
+
+xQueueHandle xToTest;
+xQueueHandle xToTimeout;
 
 void test_uart_a_startup(void);  // Startup function registers ISRs and Registers tasks and enables specific interupts
 void test_uart_a_shutdown(void); // Undoes startup function
@@ -29,9 +38,6 @@ void test_uart_c_shutdown(void);
 
 void test_uart_d_startup(void);
 void test_uart_d_shutdown(void);
-
-void test_uart_e_startup(void);
-void test_uart_e_shutdown(void);
 
 // GPIO tests
 
