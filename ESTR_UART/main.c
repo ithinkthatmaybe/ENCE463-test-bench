@@ -44,6 +44,7 @@
 // These two definitions change parameters in FreeRTOS.
 #define configUSE_16_BIT_TICKS 0
 #define INCLUDE_vTaskDelay 1
+#define INCLUDE_vTaskDelete 1
 
 // Messages to be sent for the test.
 #define MIRROR_START_STOP "`"
@@ -62,10 +63,16 @@ int gTest = 3;
 
 // The task functions.
 void vMirrorTX( void );
-void vTimeout( void );
+xTaskHandle xMirrorTX;
 void vClockSpeed( void );
+xTaskHandle xClockSpeed;
 void vIntercept( void );
+xTaskHandle xIntercept;
 
+void Monitor_PC_UART(void);
+
+void vTimeout( void );
+xTaskHandle xTimeout;
 /*-----------------------------------------------------------*/
 
 int main( void )
@@ -112,7 +119,7 @@ int main( void )
 
 	// vTimeout ends the test after the timeout period is completed, usually because an error
 	// occurred and the UUT is not responding to the input.
-	xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, NULL );
+	//xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, &xTimeout );
 
 	// Start the scheduler so the tasks start executing.
 	vTaskStartScheduler();	
@@ -124,47 +131,73 @@ int main( void )
 }
 
 /*-----------------------------------------------------------*/
-xQueueHandle xToMonPC;
 xSemaphoreHandle xTestMutex;
+xQueueHandle xToTest;
+xQueueHandle xToTimeout;
+
 void Monitor_PC_UART()
 {
-	// Monitors the  PC receive queue (UART chanel 0) and prints 10 characters on the screen of the stellaris.
-	// If more than 10 chars are received the screen is reset and printing begins again.
 	char cReceived;
-	xToMonPC = xQueueCreate(5, sizeof(char));
 	xTestMutex = xSemaphoreCreateMutex();
+
+	typedef enum states {IDLE, TASK1, TASK2} CurrState;
+	CurrState state = IDLE;
+
+	xSemaphoreTake (xPC_SENT, (portTickType)100);
+
 	if (xTestMutex == NULL)
 	{
 		RIT128x96x4StringDraw("Mutex issue", 5, 20, 30);
 	}
 	for( ;; )
 	{
-
-		if (xCOMMS_FROM_PC_Queue !=0)
+		if(state == IDLE)
 		{
-			if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
+			if (xCOMMS_FROM_PC_Queue !=0)
 			{
-				if (cReceived == '1')
+				if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
 				{
-					if (xSemaphoreTake (xTestMutex, (portTickType)100))
+					if (cReceived == '1')
 					{
-						xTaskCreate(vMirrorTX, "Task 1", 240, NULL, 5, NULL );
-					}
-									/* We are not using the task handle. */
-				} else if (cReceived == '2')
-				{
-					if (xSemaphoreTake (xTestMutex, (portTickType)100))
+						xTaskCreate(vMirrorTX, "Task 1", 240, NULL, 5, &xMirrorTX );
+						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, &xIntercept );
+						state = TASK1;
+					} else if (cReceived == '2')
 					{
-						xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, NULL );
-						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, NULL );
+						xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, &xClockSpeed );
+						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, &xIntercept );
+						state = TASK2;
+					} else
+					{
+						RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
 					}
-				} else
-				{
-					RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
+					xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, &xTimeout );
 				}
-				//xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, NULL );
-			}
 
+			}
+		} else if (state == TASK1)
+		{
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+
+				vTaskDelete(xMirrorTX);
+				vTaskDelete(xTimeout);
+				vTaskDelete(xIntercept);
+//				vQueueDelete(xToTest);
+//				vQueueDelete(xToTimeout);
+				state = IDLE;
+			}
+		} else if (state == TASK2)
+		{
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				vTaskDelete(xClockSpeed);
+				vTaskDelete(xIntercept);
+				vTaskDelete(xTimeout);
+				vQueueDelete(xToTest);
+				vQueueDelete(xToTimeout);
+				state = IDLE;
+			}
 		}
 
 	}
@@ -172,12 +205,11 @@ void Monitor_PC_UART()
 
 /*-----------------------------------------------------------*/
 
-xQueueHandle xToTest;
-xQueueHandle xToTimeout;
+
 
 void vTimeout( void )
 {
-	xToTest = xQueueCreate(5, sizeof(char));
+	xToTest = xQueueCreate(1, sizeof(char));
 	stopwatch_t stopwatch;
 	unsigned long time = 0;
 	char cReceived;
@@ -245,6 +277,7 @@ void vIntercept( void )
 				}
 			}
 		}
+		vTaskDelay(100);
 	}
 
 }
@@ -252,6 +285,7 @@ void vIntercept( void )
 void vMirrorTX( void )
 {
 	// SET THESE UP TO BE RECEIVED FROM PC
+
 	unsigned char mirror[50] = "`123`456";
 	int len = strlen(mirror);
 	char expect[50] = "ECHO ON123ECHO OFFNACKNACKNACK";
@@ -270,7 +304,7 @@ void vMirrorTX( void )
 	results.test_type = '1';
 	results_ptr = &results;
 
-	xToTimeout = xQueueCreate(2, sizeof(char));
+	xToTimeout = xQueueCreate(10, sizeof(char));
 	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
 	vTaskDelay(100);
 	// Clears the queue due to an issue where an 'l' was in the queue whne initialized.
@@ -338,6 +372,8 @@ void vClockSpeed( void )
 	char expect[20] = "ECHO ON123ECHO OFF";
 	int expectedLen = strlen(expect);
 
+	reset_uut();
+
 	int increases = 0;
 	int decreases = 0;
 	// Variables
@@ -357,7 +393,7 @@ void vClockSpeed( void )
 
 	vTaskDelay(100);
 
-	xToTimeout = xQueueCreate(2, sizeof(char));
+	xToTimeout = xQueueCreate(10, sizeof(char));
 
 
 	// Clears the queue due to an issue where an 'l' was in the queue when initialized.
@@ -400,10 +436,17 @@ void vClockSpeed( void )
 			data[1] = decreases;
 			results.test_data = data;
 			results.num_of_elements = 2;
+			reset_uut();
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-
 			RIT128x96x4StringDraw(strbuff, 5, 20, 30);
 			set = 2;
+		} else if (set == 2)
+		{
+			free(buffer);
+			while (1)
+			{
+				vTaskDelay(100);
+			}
 		}
 		while (i < expectedLen)
 		{

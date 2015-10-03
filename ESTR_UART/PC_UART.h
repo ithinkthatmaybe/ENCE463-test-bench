@@ -35,6 +35,6 @@ xSemaphoreHandle xPC_SENT;
 
 void Init_PC_UART (void);
 void send_results_to_PC();
-void Monitor_PC_UART();
+
 
 #endif /* PC_UART_H_ */

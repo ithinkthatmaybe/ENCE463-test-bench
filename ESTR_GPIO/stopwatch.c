@@ -74,6 +74,13 @@ void stopwatch_stop(stopwatch_t* stopwatch)
 // so care must be taken
 unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 {
+	// Stopwatch may not have been stopped, thats ok, but we need to update it.
+	if (stopwatch->state != STOPWATCH_STOPPED)
+	{
+		stopwatch->stop_ticks = xTaskGetTickCount();
+		stopwatch->stop_subticks = SysTickValueGet();
+	}
+
 	unsigned long subticks;
 	if (stopwatch->start_subticks >= stopwatch->stop_subticks) //not an overflow
 		subticks = stopwatch->start_subticks - stopwatch->stop_subticks;
@@ -89,12 +96,25 @@ unsigned long stopwatch_get_subticks(stopwatch_t* stopwatch)
 // stopped stopwatch instance.
 unsigned long stopwatch_get_time_ms(stopwatch_t* stopwatch)
 {
+	// Stopwatch may not have been stopped, thats ok, but we need to update it.
+	if (stopwatch->state != STOPWATCH_STOPPED)
+	{
+		stopwatch->stop_ticks = xTaskGetTickCount();
+		stopwatch->stop_subticks = SysTickValueGet();
+	}
 	return (stopwatch->stop_ticks-stopwatch->start_ticks)*portTICK_RATE_MS;
 }
 
 //WARNING: uses a divide operation, do not call from a high frequency ISR!
 unsigned long stopwatch_get_time_us(stopwatch_t* stopwatch)
 {
+	// Stopwatch may not have been stopped, thats ok, but we need to update it.
+	if (stopwatch->state != STOPWATCH_STOPPED)
+	{
+		stopwatch->stop_ticks = xTaskGetTickCount();
+		stopwatch->stop_subticks = SysTickValueGet();
+	}
+
 	unsigned long ticks_us = 0;
 	unsigned long subticks_us = 0;
 
