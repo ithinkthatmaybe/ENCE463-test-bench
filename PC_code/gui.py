@@ -11,7 +11,7 @@
 from __future__ import print_function 
 
 # import the class that interfaces with the programmer.
-from load_test import Load_test 
+from loadTest import LoadTest 
 from fileManager import FileManager
 from comms import Comms
 import Tkinter as tk
@@ -19,6 +19,7 @@ import msvcrt
 import os
 import time
 import threading
+import Queue
 
 
 quit_event = threading.Event()
@@ -47,10 +48,6 @@ def guiAddText(string):
     #editArea.config(state=tk.DISABLED)
     editArea.see(tk.END)
 
-
-
-
-
 def printMenu():
 	# Display some instructions
 	print("\n")
@@ -62,26 +59,31 @@ def printMenu():
 	print("       4 for Blank 2 test.")
 	print("       m or h for this menu.")
 	print("       r to reset device.")
+	print("       s to send one character to COM port")
 	print("       q to quit.\n")
 	print("-------------------------------------------------------------\n")
 
 def interpretCommand(command_chr):
     # Check if input is valid.
-    if command_chr not in ["1", "2", "3", "4", "m", "h", "r", "q"]:
+    if command_chr not in ["1", "2", "3", "4", "m", "h", "r", "q", "s", "\n"]:
         print("Invalid Entry!")
     # Load the test onto Stellaris if input is valid.
     elif command_chr == "1":
         _path = os.getcwd() + "/testBins/uart.bin"
         ESTR.loadTest(_path)
+        ESTR.currentTest = ESTR.UART1
     elif command_chr == "2":
         _path = os.getcwd() + "/testBins/gpio.bin"
         ESTR.loadTest(_path)
+        ESTR.currentTest = ESTR.GPIO
     elif command_chr == "3":
         _path = os.getcwd() + "/testBins/test_blank_1.bin"
         ESTR.loadTest(_path)
+        ESTR.currentTest = ESTR.BLANK
     elif command_chr == "4":
         _path = os.getcwd() + "/testBins/test_blank_2.bin"
         ESTR.loadTest(_path)
+        ESTR.currentTest = ESTR.BLANK
     elif command_chr == "r":
         ESTR.resetESTR()
     elif command_chr =="m":
@@ -90,32 +92,48 @@ def interpretCommand(command_chr):
         printMenu()
     elif command_chr =="q":
         quit_event.set()
+    else:
+        pass
     
 
-
-
-# Display some instructions
-
-
-#
-#with x_lock:
-#    statements
-#
-
-
-# Read COM port and add input to GUI
+# Read COM port and add input to GUI. Producer thread
 def readCOM():
     while True:
         if COM.inWaiting():
             s = COM.readChar()
             guiAddText(s)
-            dataLog.write(s)
+            #dataLog.write(s)
+            COMQueue.put(s)
+
+def COMWorker():
+    while True:
+        item = COMQueue.get()
+        dataLog.write(item)
+        # -check that state is waiting for start of result; change it to in test.
+        # -then get the data.
+        # -count the semicolons to find the end of the test.
+        # -change state to waiting.
+        #if ESTR.waitingForTest and COMQueue.get() == ";":
+        #    ESTR.waitingForTest = False
+        #    print(item)
+        # -check if start character, $, is received.
+        # -get next character which is test number.
+        # -pass on to test specific function.
+        # -end
+        if item == ESTR.STARTCHAR:
+            subtest_number = COMQueue.get()
+            print("\n>> Sub-test number is {}".format(subtest_number))
+            COM.sendStr("{}".format(int(subtest_number)+1))
+        COMQueue.task_done()
+
+
 # read user input
 def readTUI():
     while True:
         if msvcrt.kbhit():
             user_char = msvcrt.getch()
             print("{}".format(user_char))
+            #print(user_char.encode('hex'))
             #guiAddText("<{}>\n".format(user_char))
             # Check input to see if user wants to quit.
             #if user_char == "q": 
@@ -123,6 +141,11 @@ def readTUI():
             # Check if input is valid.
             #else:
             interpretCommand(user_char)
+            if user_char == "s":
+                print("\nEnter Character: ".format(user_char), end='')
+                item = msvcrt.getch()
+                print("{}".format(item))
+                COM.sendStr(item)
             print("\nEnter Command: ".format(user_char), end='')
         #user_input = raw_input("\nEnter Command: ")
         #interpretCommand(user_input)
@@ -132,18 +155,22 @@ printMenu()
 print("\nEnter Command: ", end='')
 
 # Make an object to represent the Stellaris.
-ESTR = Load_test()
+ESTR = LoadTest()
 dataLog = FileManager("logs/datalog{}.txt")
 try:
-    COM = Comms("COM31", 115200)
+    COM = Comms("COM33", 115200)
 except:
     quit_event.set()
     print("COM port could not be opened! Exiting...")
+COMQueue = Queue.Queue()
 
-readCOMThread = threading.Thread(target=readCOM, name="readCOMThread")
+readCOMThread = threading.Thread(target=readCOM, name="readCOM")
 readCOMThread.daemon = True
 readCOMThread.start()
-readTUIThread = threading.Thread(target=readTUI, name="readTUIThread")
+COMWorkerThread = threading.Thread(target=COMWorker, name="COMWorker")
+COMWorkerThread.daemon = True
+COMWorkerThread.start()
+readTUIThread = threading.Thread(target=readTUI, name="readTUI")
 readTUIThread.daemon = True
 readTUIThread.start()
 
@@ -154,3 +181,7 @@ while not quit_event.isSet():
 print("That's all folks!")
 
 
+# while char not == 0x0d:
+#    get more chars
+#
+# quit when enter is pressed

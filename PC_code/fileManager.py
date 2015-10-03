@@ -2,7 +2,7 @@
 # @author MCS
 # @description fileManager.py module for making a datalog
 import os # for accessing file directories.
-
+import datetime
 
 class FileManager(object):
     def __init__(self, path): 
@@ -14,6 +14,9 @@ class FileManager(object):
             log_num += 1
             #self.path = "logs/datalog{}.txt".format(log_num)
             self.path = path.format(log_num)
+        now = str(datetime.datetime.now())
+        with open(self.path, 'w') as dataFile:
+            dataFile.write("This file was created on: " + now + ".\n")
 
     def write(self, s):
         """Append a string to the file."""
