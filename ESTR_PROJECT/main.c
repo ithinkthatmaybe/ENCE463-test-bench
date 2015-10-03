@@ -85,7 +85,7 @@ void Test_Manager()
 	char cReceived;
 
 	// State list for test manager.
-	typedef enum states {IDLE, TEST1, TEST2, TEST3, TEST4} CurrState;
+	typedef enum states {IDLE, TEST0, TEST1, TEST2, TEST3, TEST4} CurrState;
 	CurrState state = IDLE;
 
 	xTestMutex = xSemaphoreCreateMutex();
@@ -107,13 +107,17 @@ void Test_Manager()
 			{
 				if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
 				{
-					if (cReceived == '1') //Command to run test 1.
+					if (cReceived == '0') //Command to run test 0.
 					{
 						test_uart_a_startup();
-						state = TEST1;
+						state = TEST0;
+					} else if (cReceived == '2') //Command to run test 3.
+					{
+						test_uart_ci_startup();
+						state = TEST2;
 					} else if (cReceived == '3') //Command to run test 3.
 					{
-						test_uart_c_startup();
+						test_uart_cii_startup();
 						state = TEST3;
 					} else if (cReceived == '4') //Command to run test 4.
 					{
@@ -129,18 +133,25 @@ void Test_Manager()
 				}
 
 			}
-		} else if (state == TEST1) //Test 1 is running.
+		} else if (state == TEST0) //Test 0 is running.
 		{
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
 				test_uart_a_shutdown();
 				state = IDLE;
 			}
+		} else if (state == TEST2) //Test 2 is running.
+		{
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_uart_ci_shutdown();
+				state = IDLE;
+			}
 		} else if (state == TEST3) //Test 3 is running.
 		{
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
-				test_uart_c_shutdown();
+				test_uart_cii_shutdown();
 				state = IDLE;
 			}
 		} else if (state == TEST4) //Test 4 is running.

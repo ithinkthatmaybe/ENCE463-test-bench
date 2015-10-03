@@ -72,15 +72,27 @@ void test_uart_a_shutdown(void)
 	vTaskDelete(xTimeout);
 }
 
-void test_uart_c_startup(void)
+void test_uart_ci_startup(void)
 {
 	xTaskCreate(vStatus, "STS", 240, NULL, 2, &xStatus );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
 }
 
-void test_uart_c_shutdown(void)
+void test_uart_ci_shutdown(void)
 {
 	vTaskDelete(xStatus);
+	vTaskDelete(xTimeout);
+}
+
+void test_uart_cii_startup(void)
+{
+	xTaskCreate(vEmergStatus, "STS", 240, NULL, 2, &xEmergStatus );
+	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+}
+
+void test_uart_cii_shutdown(void)
+{
+	vTaskDelete(xEmergStatus);
 	vTaskDelete(xTimeout);
 }
 
@@ -340,7 +352,7 @@ void vMirrorTX( void )
 	// Initialising the test results struct.
 	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
-	results.test_type = '1';
+	results.test_type = '0';
 	results_ptr = &results;
 
 	// Clears the queue before running the test to ensure predictable operation.
@@ -410,22 +422,67 @@ void vMirrorTX( void )
 // Status test task.
 void vStatus( void )
 {
-	// These must be declared as variables in order to be passed into the queue.
-	char pass[5] = "Pass";
-	char fail[5] = "Fail";
-	char timeout[8] = "Timeout";
+	// This must be declared as a variable in order to be passed into the queue.
 	char *status = "s";
-	char *emerg = "e";
-	char *resetEmerg = "r";
 
 	int maxLength = 60; // Chosen as slightly longer than status and transponder message lengths added together.
 
 	// Variables.
 	char buffer[60] = {0};
-	typedef enum states {STATUS, EMERG, RESET, FINISH} CurrState;
-	CurrState state = STATUS;
 	char cReceived;
-	int done = 0;
+
+	// Timeout control messages and setup.
+	char messageSent = 'S';
+	char finished = 'F';
+	xToTimeout = xQueueCreate(10, sizeof(char));
+	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
+
+	// Initialising the test results struct.
+	Test_res* results_ptr;
+	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	results.test_type = '2';
+	results_ptr = &results;
+
+	// Clears the queue before running the test to ensure predictable operation.
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
+
+	for( ;; )
+	{
+		// Perform the mirror.
+		mirrorUART(status, 1, UART1_BASE, maxLength, buffer);
+
+		// Test passed. Send results to PC and clean up test.
+		results.test_string = buffer;
+		results.test_string_len = maxLength;
+		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
+
+		while (1)
+		{
+			// Loop here while waiting for test manager to delete the task.
+			vTaskDelay(100);
+		}
+	}
+}
+
+// Status test task.
+void vEmergStatus( void )
+{
+	// This must be declared as a variable in order to be passed into the queue.
+	char *emerg = "e";
+	char *reset = "r";
+
+	int maxLength = 60; // Chosen as slightly longer than status and transponder message lengths added together.
+
+	// Variables.
+	char buffer[60] = {0};
+	char cReceived;
 
 	// Timeout control messages and setup.
 	char messageSent = 'S';
@@ -451,15 +508,15 @@ void vStatus( void )
 	for( ;; )
 	{
 		// Perform the mirror.
-		mirrorUART(status, 1, UART1_BASE, maxLength, buffer);
+		mirrorUART(emerg, 1, UART1_BASE, maxLength, buffer);
 
 		// Test passed. Send results to PC and clean up test.
 		results.test_string = buffer;
 		results.test_string_len = maxLength;
 		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
-		done = 1;
-		while (done)
+		UARTSend(reset, 1, UART1_BASE);
+		while (1)
 		{
 			// Loop here while waiting for test manager to delete the task.
 			vTaskDelay(100);
