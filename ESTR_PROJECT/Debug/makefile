@@ -140,9 +140,10 @@ all: FRT.out
 FRT.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armcl" -mv7M3 --abi=eabi -me -g --diag_warning=225 --display_error_number -z --stack_size=0x4000 -m"FRT.map" --heap_size=0x4000 -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/lib" -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/include" --reread_libs --warn_sections --display_error_number --xml_link_info="FRT_linkInfo.xml" --rom_model -o "FRT.out" $(ORDERED_OBJS)
+	"c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/armcl" -mv7M3 --abi=eabi -me -g --diag_warning=225 --display_error_number -z --stack_size=0x3000 -m"FRT.map" --heap_size=0x3000 -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/lib" -i"c:/ti/ccsv6/tools/compiler/arm_5.1.6/include" --reread_libs --warn_sections --display_error_number --xml_link_info="FRT_linkInfo.xml" --rom_model -o "FRT.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
+	@$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
@@ -153,8 +154,12 @@ clean:
 	-@echo 'Finished clean'
 	-@echo ' '
 
+post-build:
+	-"c:/ti/ccsv6/utils/tiobj2bin/tiobj2bin" "FRT.out" "FRT.bin" "c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/ofd470" "c:/ti/ccsv6/tools/compiler/arm_5.1.6/bin/hex470" "c:/ti/ccsv6/utils/tiobj2bin/mkhex4bin"
+	-@echo ' '
+
 .PHONY: all clean dependents
-.SECONDARY:
+.SECONDARY: post-build
 
 -include ../makefile.targets
 

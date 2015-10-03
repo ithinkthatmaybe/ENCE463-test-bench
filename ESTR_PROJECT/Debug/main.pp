@@ -43,6 +43,12 @@ main.obj: ../include/task.h
 main.obj: J:/courses/ENEL463/StellarisWare/driverlib/systick.h
 main.obj: ../uut_gpio.h
 main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
+main.obj: ../include/task.h
+main.obj: J:/courses/ENEL463/StellarisWare/inc/hw_pwm.h
+main.obj: J:/courses/ENEL463/StellarisWare/driverlib/timer.h
+main.obj: J:/courses/ENEL463/StellarisWare/driverlib/pwm.h
+main.obj: ../pins.h
+main.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
 
 ../main.c: 
 ../include/FreeRTOS.h: 
@@ -86,4 +92,10 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/string.h:
 ../include/task.h: 
 J:/courses/ENEL463/StellarisWare/driverlib/systick.h: 
 ../uut_gpio.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
+../include/task.h: 
+J:/courses/ENEL463/StellarisWare/inc/hw_pwm.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/timer.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/pwm.h: 
+../pins.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 

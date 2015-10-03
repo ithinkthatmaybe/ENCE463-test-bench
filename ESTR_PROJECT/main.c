@@ -66,10 +66,8 @@ void vMirrorTX( void );
 xTaskHandle xMirrorTX;
 void vClockSpeed( void );
 xTaskHandle xClockSpeed;
-void vIntercept( void );
-xTaskHandle xIntercept;
 
-void Monitor_PC_UART(void);
+void Test_Manager(void);
 
 void vTimeout( void );
 xTaskHandle xTimeout;
@@ -96,30 +94,8 @@ int main( void )
     //  input UART starts to be read.
     UARTSend((unsigned char *)"q", 1, UART1_BASE);
 
-	// Create required tasks. First task creation has comments for ease of use.
-
-    xTaskCreate(Monitor_PC_UART, "Task 5", 240, NULL, 1, NULL );
-//
-//    // vMirrorTX is test 1a.
-//    if (gTest == 1){
-//    	xTaskCreate(	vMirrorTX,			/* Pointer to the function that implements the task. */
-//    						"Task 1",				/* Text name for the task.  This is to facilitate debugging only. */
-//    						240,					/* Stack depth in words. */
-//    						NULL,	/* Pass the text to be printed in as the task parameter. */
-//    						5,						/* This task will run at priority 1. */
-//    						NULL );					/* We are not using the task handle. */
-//    } else if (gTest == 2){
-//    	// vClockSpeed is test 1d.
-//    	xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, NULL );
-//    	xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, NULL );
-//    }
-
-
-
-
-	// vTimeout ends the test after the timeout period is completed, usually because an error
-	// occurred and the UUT is not responding to the input.
-	//xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, &xTimeout );
+	// Create test management task.
+    xTaskCreate(Test_Manager, "MNG", 240, NULL, 1, NULL );
 
 	// Start the scheduler so the tasks start executing.
 	vTaskStartScheduler();	
@@ -131,71 +107,74 @@ int main( void )
 }
 
 /*-----------------------------------------------------------*/
+//Semaphores are queues declared here as they must be global to work.
 xSemaphoreHandle xTestMutex;
 xQueueHandle xToTest;
 xQueueHandle xToTimeout;
 
-void Monitor_PC_UART()
+
+// Test manager task, in charge of running and deleting tests.
+void Test_Manager()
 {
 	char cReceived;
-	xTestMutex = xSemaphoreCreateMutex();
 
-	typedef enum states {IDLE, TASK1, TASK2} CurrState;
+	// State list for test manager.
+	typedef enum states {IDLE, TEST1, TEST2} CurrState;
 	CurrState state = IDLE;
 
+	xTestMutex = xSemaphoreCreateMutex();
+
+	//Semaphore is taken in order to lower the value from 1 to 0.
 	xSemaphoreTake (xPC_SENT, (portTickType)100);
 
+	//Checking mutex exists.
 	if (xTestMutex == NULL)
 	{
 		RIT128x96x4StringDraw("Mutex issue", 5, 20, 30);
 	}
+
 	for( ;; )
 	{
-		if(state == IDLE)
+		if(state == IDLE) //No tests are running.
 		{
 			if (xCOMMS_FROM_PC_Queue !=0)
 			{
 				if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
 				{
-					if (cReceived == '1')
+					if (cReceived == '1') //Command to run test 1.
 					{
-						xTaskCreate(vMirrorTX, "Task 1", 240, NULL, 5, &xMirrorTX );
-						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, &xIntercept );
-						state = TASK1;
-					} else if (cReceived == '2')
+						xTaskCreate(vMirrorTX, "MTX", 240, NULL, 5, &xMirrorTX );
+						state = TEST1;
+					} else if (cReceived == '2') //Command to run test 2.
 					{
-						xTaskCreate(vClockSpeed, "Task 2", 240, NULL, 2, &xClockSpeed );
-						xTaskCreate(vIntercept, "Task 3", 240, NULL, 2, &xIntercept );
-						state = TASK2;
+						xTaskCreate(vClockSpeed, "CST", 240, NULL, 2, &xClockSpeed );
+						state = TEST2;
 					} else
 					{
 						RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
 					}
-					xTaskCreate(vTimeout, "Task 4", 240, NULL, 2, &xTimeout );
+
+					//Timeout is required for all tests, so is always included.
+					xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
 				}
 
 			}
-		} else if (state == TASK1)
+		} else if (state == TEST1) //Test 1 is running.
 		{
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
-
+				//Delete tasks that are not required.
 				vTaskDelete(xMirrorTX);
 				vTaskDelete(xTimeout);
-				vTaskDelete(xIntercept);
-//				vQueueDelete(xToTest);
-//				vQueueDelete(xToTimeout);
 				state = IDLE;
 			}
-		} else if (state == TASK2)
+		} else if (state == TEST2) //Test 2 is running.
 		{
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
+				//Delete tasks that are not required.
 				vTaskDelete(xClockSpeed);
-				vTaskDelete(xIntercept);
 				vTaskDelete(xTimeout);
-				vQueueDelete(xToTest);
-				vQueueDelete(xToTimeout);
 				state = IDLE;
 			}
 		}
@@ -209,50 +188,62 @@ void Monitor_PC_UART()
 
 void vTimeout( void )
 {
+	// Timeout period in ms.
+	int timeout = 200;
+
+	// Create queue to send timeout messages to the test.
 	xToTest = xQueueCreate(1, sizeof(char));
+
 	stopwatch_t stopwatch;
 	unsigned long time = 0;
 	char cReceived;
 	int finished = 0;
-	char strbuff[20];
+
 	// Start stopwatch in stopped mode.
 	int stopped = 1;
-	int timeout = 200;
-	char fail = 'F';
-	vTaskDelay(1);
+
+	// A bar is used as it should not be used in normal UART communication.
+	char fail = '|';
+
 	for( ;; )
 	{
-		if (xToTimeout !=0 && stopped == 1)
+		if (xToTimeout !=0 && stopped == 1) // Timeout in idle mode, waiting for signal to begin.
 		{
 			if (xQueueReceive(xToTimeout, &cReceived, (portTickType)10))
 			{
-				//Sending is finished, start timeout timer
-				if (cReceived == 'S'){
+				// Receive command to start the timer.
+				if (cReceived == 'S')
+				{
 					stopped = 0;
 					stopwatch_start(&stopwatch);
-				} else {
-					sprintf(strbuff,"ERROR STOPWATCH");
-					RIT128x96x4StringDraw(strbuff, 5, 20, 30);
+				} else
+				{
+					RIT128x96x4StringDraw("ERROR STOPWATCH", 5, 20, 30);
 				}
 			}
-		} else if (stopped == 0){
+		} else if (stopped == 0)
+		{
+			// Update current time.
 			stopwatch_stop(&stopwatch);
 			time = stopwatch_get_time_ms(&stopwatch);
 		}
-		vTaskDelay(1);
-		if (time >=timeout && !finished){
-			//sprintf(strbuff,"Fail timeout");
-			//RIT128x96x4StringDraw(strbuff, 5, 20, 30);
-			xQueueSendToBack( xToTest, &fail, (portTickType)10);
+
+		// If current time is greater than timeout period, let the testing task know that it has timed out.
+		if (time >=timeout && !finished)
+		{
+			xQueueSendToBack( xUARTReadQueue, &fail, (portTickType)10);
 		}
+
+		// Check the queue for messages to stop the timeout stopwatch.
 		if (xToTimeout !=0 && stopped == 0)
 		{
 			if (xQueueReceive(xToTimeout, &cReceived, (portTickType)10))
 			{
-				//Sending is finished, start timeout timer
-				if (cReceived == 'F'){
+				if (cReceived == 'F') // All timing finished for this test.
+				{
 					finished = 1;
-				} else if (cReceived == 'E'){
+				} else if (cReceived == 'E') // Timing paused, but will resume.
+				{
 					stopped = 1;
 					time = 0;
 				}
@@ -261,54 +252,40 @@ void vTimeout( void )
 	}
 }
 
-void vIntercept( void )
-{
-	char fail = '|';
-	char cReceived;
-	for ( ;; )
-	{
-		if (xToTest !=0)
-		{
-			while (xQueueReceive(xToTest, &cReceived, (portTickType)10))
-			{
-				if (cReceived == 'F')
-				{
-					xQueueSendToBack( xUARTReadQueue, &fail, (portTickType)10);
-				}
-			}
-		}
-		vTaskDelay(100);
-	}
-
-}
-
+// Mirror TX test task.
 void vMirrorTX( void )
 {
-	// SET THESE UP TO BE RECEIVED FROM PC
-
+	// TODO: SET THESE UP TO BE RECEIVED FROM PC
 	unsigned char mirror[50] = "`123`456";
-	int len = strlen(mirror);
 	char expect[50] = "ECHO ON123ECHO OFFNACKNACKNACK";
+
+	// Based on length of given strings.
+	int len = strlen(mirror);
 	int expectedLen = strlen(expect);
+
+	// These must be declared as variables in order to be passed into the queue.
 	char pass[5] = "Pass";
 	char fail[5] = "Fail";
-	// Variables
-	char strbuff[20] = {0};
-	char * buffer = (char *) malloc (expectedLen);
+	char timeout[8] = "Timeout";
 
+	// Variables.
+	char * buffer = (char *) malloc (expectedLen);
+	int done = 0;
+	char cReceived;
+
+	// Timeout control messages and setup.
 	char messageSent = 'S';
 	char finished = 'F';
-	int done = 0;
+	xToTimeout = xQueueCreate(10, sizeof(char));
+	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
+
+	// Initialising the test results struct.
 	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
 	results.test_type = '1';
 	results_ptr = &results;
 
-	xToTimeout = xQueueCreate(10, sizeof(char));
-	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
-	vTaskDelay(100);
 	// Clears the queue due to an issue where an 'l' was in the queue whne initialized.
-	char cReceived;
 	if (xUARTReadQueue !=0)
 	{
 		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
@@ -319,85 +296,99 @@ void vMirrorTX( void )
 
 	for( ;; )
 	{
-
-		if (xToTest !=0)
-		{
-			while (xQueueReceive(xToTest, &cReceived, (portTickType)10))
-			{
-				if (cReceived == 'F')
-				{
-					sprintf(strbuff,"Fail timeout");
-					RIT128x96x4StringDraw(strbuff, 5, 20, 30);
-				}
-			}
-		}
+		// Perform the mirror.
 		mirrorUART(mirror, len, UART1_BASE, expectedLen, buffer);
+
+		// Check the mirror results.
 		if (strncmp(buffer, expect, expectedLen)==0)
 		{
-
+			// Test passed. Send results to PC and clean up test.
 			results.test_string = pass;
 			results.test_string_len = strlen(results.test_string);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-
-			sprintf(strbuff,"Expected response");
-			RIT128x96x4StringDraw(strbuff, 5, 10, 30);
+			RIT128x96x4StringDraw("Expected response", 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
 			done = 1;
 		} else
 		{
+			// Test failed. Send results to PC and clean up test.
 			results.test_string = fail;
 			results.test_string_len = strlen(results.test_string);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-
-			sprintf(strbuff,"Fail wrong received");
-			RIT128x96x4StringDraw(strbuff, 5, 10, 30);
+			RIT128x96x4StringDraw("Fail wrong received", 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
 			done = 1;
 		}
+
+		// Check for timeout.
+		if (xToTest !=0 && done == 0)
+		{
+			while (xQueueReceive(xToTest, &cReceived, (portTickType)10))
+			{
+				if (cReceived == '|')
+				{
+					// Test timed out. Send results to PC and clean up test.
+					results.test_string = timeout;
+					results.test_string_len = strlen(results.test_string);
+					xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+					RIT128x96x4StringDraw("Fail timeout", 5, 20, 30);
+					xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
+					free(buffer);
+					done = 1;
+				}
+			}
+		}
+
 		while (done)
 		{
+			// Loop here while waiting for test manager to delete the task.
 			vTaskDelay(100);
 		}
 	}
 }
 
+// Clock speed variation test task.
 void vClockSpeed( void )
 {
-	// SET THESE UP TO BE RECEIVED FROM PC
-	unsigned char mirror[10] = "-`123`";
-	unsigned char mirror2[10] = "+`123`";
-	int len = strlen(mirror);
+	// TODO: SET THESE UP TO BE RECEIVED FROM PC
+	unsigned char mirrorDec[10] = "-`123`";
+	unsigned char mirrorInc[10] = "+`123`";
 	char expect[20] = "ECHO ON123ECHO OFF";
+
+	// Based on length of given strings.
+	int len = strlen(mirrorDec);
 	int expectedLen = strlen(expect);
 
-	reset_uut();
-
+	// Variables
+	int changes = 0;
 	int increases = 0;
 	int decreases = 0;
-	// Variables
 	char strbuff[20] = {0};
 	char * buffer = (char *) malloc (expectedLen);
-	int set = 0;
 	int i = 0;
-	char messageSent = 'S';
-	//char finished = 'F';
-	char ended = 'E';
+	char cReceived;
 
-	int done = 0;
+	typedef enum states {DEC, INC, FIN} CurrState;
+	CurrState state = DEC;
+
+	// Timeout messages and queue.
+	char messageSent = 'S';
+	char ended = 'E';
+	xToTimeout = xQueueCreate(10, sizeof(char));
+
+	// Initialising results struct.
 	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
 	results.test_type = '2';
 	results_ptr = &results;
 
-	vTaskDelay(100);
+	// Reset the UUT and wait for it to boot up.
+	reset_uut();
+	vTaskDelay(500);
 
-	xToTimeout = xQueueCreate(10, sizeof(char));
-
-
-	// Clears the queue due to an issue where an 'l' was in the queue when initialized.
-	char cReceived;
+	// Clears the queue before running the test to ensure predictable operation.
 	if (xUARTReadQueue !=0)
 	{
 		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
@@ -408,28 +399,39 @@ void vClockSpeed( void )
 
 	for( ;; )
 	{
+		// Start the timeout stopwatch.
 		xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
 
-		if (!set)
+		// Perform the mirror test.
+		if (state == DEC)
 		{
-			mirrorUART(mirror, len, UART1_BASE, expectedLen, buffer);
-		} else {
-			mirrorUART(mirror2, len, UART1_BASE, expectedLen, buffer);
+			mirrorUART(mirrorDec, len, UART1_BASE, expectedLen, buffer);
+		} else if (state == INC)
+		{
+			mirrorUART(mirrorInc, len, UART1_BASE, expectedLen, buffer);
 		}
 
-
-		if (strncmp(buffer, expect, expectedLen)==0)
+		// Check results.
+		if (strncmp(buffer, expect, expectedLen)==0) // Received expected response.
 		{
+			// Stop the timeout stopwatch.
 			xQueueSendToBack( xToTimeout, &ended, (portTickType)10);
-		} else if (!set)
+		} else if (state == DEC) // Received incorrect response (or timed out) while attempting to decrease clock speed.
 		{
+			// Stop the timeout stopwatch.
 			xQueueSendToBack( xToTimeout, &ended, (portTickType)10);
 			reset_uut();
 			vTaskDelay(100);
-			decreases = increases;
-			increases = 0;
-			set = 1;
-		} else if (set == 1){
+			decreases = changes;
+
+			// Changes is set to -1 as this will increase once before any testing occurs.
+			changes = -1;
+
+			state = INC;
+		} else if (state == INC)// Received incorrect response (or timed out) while attempting to increase clock speed.
+		{
+			// Test complete. Send results to PC and clean up test.
+			increases = changes;
 			sprintf(strbuff,"Inc: %d Dec: %d", increases, decreases);
 			int data [2]= {0};
 			data[0] = increases;
@@ -438,23 +440,28 @@ void vClockSpeed( void )
 			results.num_of_elements = 2;
 			reset_uut();
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+
 			RIT128x96x4StringDraw(strbuff, 5, 20, 30);
-			set = 2;
-		} else if (set == 2)
+
+			state = FIN;
+		} else if (state == FIN)
 		{
 			free(buffer);
 			while (1)
 			{
+				// When finished, wait here for task to be deleted.
 				vTaskDelay(100);
 			}
 		}
+
+		// Clear results buffer between trials.
 		while (i < expectedLen)
 		{
 			buffer[i] = 0;
 			i++;
 		}
 		i = 0;
-		increases++;
+		changes++;
 	}
 }
 

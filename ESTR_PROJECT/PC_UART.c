@@ -59,40 +59,12 @@ void Init_PC_UART (void)
 	 xSEND_RESULTS_Queue = xQueueCreate(20, sizeof(struct Test_results));
 	 xCOMMS_FROM_PC_Queue = xQueueCreate(40, sizeof(char));
 	 // create pc sending task
-	 xTaskCreate(send_results_to_PC, "Task 4", 240, NULL, 1, NULL );
+	 xTaskCreate(send_results_to_PC, "PC_Send", 240, NULL, 1, NULL );
 	 vSemaphoreCreateBinary( xPC_SENT );
 	 // used for displaying text from PC sent by UART. For testing purposes only
 
 
 }
-
-//void Monitor_PC_UART()
-//{
-//	// Monitors the  PC receive queue (UART chanel 0) and prints 10 characters on the screen of the stellaris.
-//	// If more than 10 chars are received the screen is reset and printing begins again.
-//	char cReceived;
-//	int i = 0;
-//	char buffer[20] = {0};
-//
-//	for( ;; )
-//	{
-//		if (xCOMMS_FROM_PC_Queue !=0)
-//		{
-//			if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
-//			{
-//				if (cReceived == 'm')
-//				{
-//
-//					RIT128x96x4StringDraw("Hello Martin", 5, 10, 30);
-//				}
-//			}
-//
-//		}
-//
-//	}
-//}
-
-
 
 void send_results_to_PC()
 {

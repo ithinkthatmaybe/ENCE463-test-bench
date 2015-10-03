@@ -80,4 +80,14 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>ORIGINAL_PROJECT_ROOT</name>
+			<value>file:/P:/Courses/ENCE361/StellarisWare/boards/ek-lm3s1968/ESTR_project/ccs</value>
+		</variable>
+		<variable>
+			<name>SW_ROOT</name>
+			<value>$%7BPARENT-4-ORIGINAL_PROJECT_ROOT%7D</value>
+		</variable>
+	</variableList>
 </projectDescription>

@@ -14,15 +14,22 @@ test.obj: ../include/task.h
 test.obj: ../include/list.h
 test.obj: J:/courses/ENEL463/StellarisWare/driverlib/systick.h
 test.obj: ../uut_gpio.h
-test.obj: J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h
-test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_types.h
-test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_memmap.h
-test.obj: J:/courses/ENEL463/StellarisWare/driverlib/sysctl.h
-test.obj: J:/courses/ENEL463/StellarisWare/driverlib/gpio.h
-test.obj: J:/courses/ENEL463/StellarisWare/driverlib/pin_map.h
 test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
 test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h
 test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h
+test.obj: ../include/task.h
+test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_memmap.h
+test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_types.h
+test.obj: J:/courses/ENEL463/StellarisWare/inc/hw_pwm.h
+test.obj: J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h
+test.obj: J:/courses/ENEL463/StellarisWare/driverlib/timer.h
+test.obj: J:/courses/ENEL463/StellarisWare/driverlib/sysctl.h
+test.obj: J:/courses/ENEL463/StellarisWare/driverlib/gpio.h
+test.obj: J:/courses/ENEL463/StellarisWare/driverlib/pin_map.h
+test.obj: J:/courses/ENEL463/StellarisWare/driverlib/pwm.h
+test.obj: J:/courses/ENEL463/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h
+test.obj: ../pins.h
+test.obj: c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h
 test.obj: ../UART.h
 test.obj: J:/courses/ENEL463/StellarisWare/driverlib/interrupt.h
 test.obj: J:/courses/ENEL463/StellarisWare/driverlib/uart.h
@@ -45,15 +52,22 @@ c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stddef.h:
 ../include/list.h: 
 J:/courses/ENEL463/StellarisWare/driverlib/systick.h: 
 ../uut_gpio.h: 
-J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h: 
-J:/courses/ENEL463/StellarisWare/inc/hw_types.h: 
-J:/courses/ENEL463/StellarisWare/inc/hw_memmap.h: 
-J:/courses/ENEL463/StellarisWare/driverlib/sysctl.h: 
-J:/courses/ENEL463/StellarisWare/driverlib/gpio.h: 
-J:/courses/ENEL463/StellarisWare/driverlib/pin_map.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/linkage.h: 
 c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdarg.h: 
+../include/task.h: 
+J:/courses/ENEL463/StellarisWare/inc/hw_memmap.h: 
+J:/courses/ENEL463/StellarisWare/inc/hw_types.h: 
+J:/courses/ENEL463/StellarisWare/inc/hw_pwm.h: 
+J:/courses/ENEL463/StellarisWare/inc/lm3s1968.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/timer.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/sysctl.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/gpio.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/pin_map.h: 
+J:/courses/ENEL463/StellarisWare/driverlib/pwm.h: 
+J:/courses/ENEL463/StellarisWare/boards/ek-lm3s1968/drivers/rit128x96x4.h: 
+../pins.h: 
+c:/ti/ccsv6/tools/compiler/arm_5.1.6/include/stdio.h: 
 ../UART.h: 
 J:/courses/ENEL463/StellarisWare/driverlib/interrupt.h: 
 J:/courses/ENEL463/StellarisWare/driverlib/uart.h: 
