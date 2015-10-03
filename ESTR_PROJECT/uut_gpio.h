@@ -16,6 +16,7 @@
 #include "inc\hw_memmap.h"
 #include "inc\hw_types.h"
 #include "inc\hw_pwm.h"
+#include "inc\lm3s1968.h"
 
 #include "driverlib/timer.h"
 #include "driverlib/sysctl.h"
@@ -25,6 +26,10 @@
 
 #include "pins.h"
 #include "stopwatch.h"
+
+#include "stdio.h"
+
+
 
 
 // CONFIG Parameters
@@ -50,6 +55,11 @@
 
 #endif
 
+// set up GPIO pins on stellaris
+void InitGPIO (void);
+
+// Reset UUT (active low)
+void reset_uut(void);
 
 void airspeed_response_isr(void);
 void transponder_response_isr(void);
