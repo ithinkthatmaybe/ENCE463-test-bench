@@ -45,7 +45,7 @@ void Init_PC_UART (void)
 
 
 	 // Configure the UART for 9600, 8-N-1 operation.
-	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115000,
+	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
 						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
 						  UART_CONFIG_PAR_EVEN));
 
@@ -56,8 +56,8 @@ void Init_PC_UART (void)
 	 UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
 
 	 // Create required queue for sending results to PC result sender for transmission via UART
-	 xSEND_RESULTS_Queue = xQueueCreate(10, sizeof(struct Test_results));
-	 xCOMMS_FROM_PC_Queue = xQueueCreate(20, sizeof(char));
+	 xSEND_RESULTS_Queue = xQueueCreate(20, sizeof(struct Test_results));
+	 xCOMMS_FROM_PC_Queue = xQueueCreate(40, sizeof(char));
 	 // create pc sending task
 	 xTaskCreate(send_results_to_PC, "Task 4", 240, NULL, 1, NULL );
 	 vSemaphoreCreateBinary( xPC_SENT );
@@ -129,7 +129,7 @@ void send_results_to_PC()
 			        	{
 			        		// inserts , between each data item
 			        		UARTSend(",", 1,UART0_BASE );
-			        		vTaskDelay(1);
+			        		vTaskDelay(5);
 			        	}
 			        	// inserts semi colon to indicate end of data array
 			        	else UARTSend(";", 1,UART0_BASE );
@@ -154,6 +154,7 @@ void send_results_to_PC()
 			{
 				sent = 0;
 				xSemaphoreGive(xPC_SENT);
+
 			}
 		}
 	}
