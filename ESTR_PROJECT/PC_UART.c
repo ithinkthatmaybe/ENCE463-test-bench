@@ -82,8 +82,10 @@ void send_results_to_PC()
 			while (xQueueReceive(xSEND_RESULTS_Queue, &(results), (portTickType)10))
 			{
 				sent = 1;
+				// $ character used to detect beginning of message on PC interface.
+				UARTCharPutNonBlocking(UART0_BASE, '$');
 				UARTCharPutNonBlocking(UART0_BASE, (*results).test_type);
-				// semi colon used to indicate start of data array
+				// Semi colon used to indicate start of data array.
 				UARTCharPutNonBlocking(UART0_BASE, ';');
 
 				temp = (*results).num_of_elements;

@@ -14,6 +14,16 @@
 // and task regestration will be split off
 void test_init(void)
 {
+	// Set the clocking to run from the PLL at 50 MHz.  Assumes 8MHz XTAL,
+	// whereas some older eval boards used 6MHz.
+	SysCtlClockSet( SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN | SYSCTL_XTAL_8MHZ );
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_2);
+	IntMasterEnable();
+	// Initialize the OLED display and write status.
+	RIT128x96x4Init(1000000);
+	RIT128x96x4StringDraw("UART Mirror", 36, 0, 15);
+
 	// UART initialisatoin
 	InitUART();
 	InitGPIO ();
@@ -59,6 +69,30 @@ void test_uart_a_startup(void)
 void test_uart_a_shutdown(void)
 {
 	vTaskDelete(xMirrorTX);
+	vTaskDelete(xTimeout);
+}
+
+void test_uart_ci_startup(void)
+{
+	xTaskCreate(vStatus, "STS", 240, NULL, 2, &xStatus );
+	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+}
+
+void test_uart_ci_shutdown(void)
+{
+	vTaskDelete(xStatus);
+	vTaskDelete(xTimeout);
+}
+
+void test_uart_cii_startup(void)
+{
+	xTaskCreate(vEmergStatus, "STS", 240, NULL, 2, &xEmergStatus );
+	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+}
+
+void test_uart_cii_shutdown(void)
+{
+	vTaskDelete(xEmergStatus);
 	vTaskDelete(xTimeout);
 }
 
@@ -225,7 +259,7 @@ void test_gpio_e_shutdown(void)
 void vTimeout( void )
 {
 	// Timeout period in ms.
-	int timeout = 200;
+	int timeout = 750;
 
 	// Create queue to send timeout messages to the test.
 	xToTest = xQueueCreate(1, sizeof(char));
@@ -318,10 +352,10 @@ void vMirrorTX( void )
 	// Initialising the test results struct.
 	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
-	results.test_type = '1';
+	results.test_type = '0';
 	results_ptr = &results;
 
-	// Clears the queue due to an issue where an 'l' was in the queue whne initialized.
+	// Clears the queue before running the test to ensure predictable operation.
 	if (xUARTReadQueue !=0)
 	{
 		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
@@ -385,6 +419,111 @@ void vMirrorTX( void )
 	}
 }
 
+// Status test task.
+void vStatus( void )
+{
+	// This must be declared as a variable in order to be passed into the queue.
+	char *status = "s";
+
+	int maxLength = 60; // Chosen as slightly longer than status and transponder message lengths added together.
+
+	// Variables.
+	char buffer[60] = {0};
+	char cReceived;
+
+	// Timeout control messages and setup.
+	char messageSent = 'S';
+	char finished = 'F';
+	xToTimeout = xQueueCreate(10, sizeof(char));
+	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
+
+	// Initialising the test results struct.
+	Test_res* results_ptr;
+	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	results.test_type = '2';
+	results_ptr = &results;
+
+	// Clears the queue before running the test to ensure predictable operation.
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
+
+	for( ;; )
+	{
+		// Perform the mirror.
+		mirrorUART(status, 1, UART1_BASE, maxLength, buffer);
+
+		// Test passed. Send results to PC and clean up test.
+		results.test_string = buffer;
+		results.test_string_len = maxLength;
+		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
+
+		while (1)
+		{
+			// Loop here while waiting for test manager to delete the task.
+			vTaskDelay(100);
+		}
+	}
+}
+
+// Status test task.
+void vEmergStatus( void )
+{
+	// This must be declared as a variable in order to be passed into the queue.
+	char *emerg = "e";
+	char *reset = "r";
+
+	int maxLength = 60; // Chosen as slightly longer than status and transponder message lengths added together.
+
+	// Variables.
+	char buffer[60] = {0};
+	char cReceived;
+
+	// Timeout control messages and setup.
+	char messageSent = 'S';
+	char finished = 'F';
+	xToTimeout = xQueueCreate(10, sizeof(char));
+	xQueueSendToBack( xToTimeout, &messageSent, (portTickType)10);
+
+	// Initialising the test results struct.
+	Test_res* results_ptr;
+	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	results.test_type = '3';
+	results_ptr = &results;
+
+	// Clears the queue before running the test to ensure predictable operation.
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
+
+	for( ;; )
+	{
+		// Perform the mirror.
+		mirrorUART(emerg, 1, UART1_BASE, maxLength, buffer);
+
+		// Test passed. Send results to PC and clean up test.
+		results.test_string = buffer;
+		results.test_string_len = maxLength;
+		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
+		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
+		UARTSend(reset, 1, UART1_BASE);
+		while (1)
+		{
+			// Loop here while waiting for test manager to delete the task.
+			vTaskDelay(100);
+		}
+	}
+}
+
 // Clock speed variation test task.
 void vClockSpeed( void )
 {
@@ -417,7 +556,7 @@ void vClockSpeed( void )
 	// Initialising results struct.
 	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
-	results.test_type = '2';
+	results.test_type = '4';
 	results_ptr = &results;
 
 	// Reset the UUT and wait for it to boot up.

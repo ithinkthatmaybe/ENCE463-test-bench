@@ -23,6 +23,10 @@ void vClockSpeed( void );
 xTaskHandle xClockSpeed;
 void vTimeout( void );
 xTaskHandle xTimeout;
+void vStatus( void );
+xTaskHandle xStatus;
+void vEmergStatus( void );
+xTaskHandle xEmergStatus;
 
 xQueueHandle xToTest;
 xQueueHandle xToTimeout;
@@ -33,8 +37,11 @@ void test_uart_a_shutdown(void); // Undoes startup function
 void test_uart_b_startup(void);
 void test_uart_b_shutdown(void);
 
-void test_uart_c_startup(void);
-void test_uart_c_shutdown(void);
+void test_uart_ci_startup(void);
+void test_uart_ci_shutdown(void);
+
+void test_uart_cii_startup(void);
+void test_uart_cii_shutdown(void);
 
 void test_uart_d_startup(void);
 void test_uart_d_shutdown(void);
