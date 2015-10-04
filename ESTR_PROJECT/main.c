@@ -20,7 +20,7 @@
 #include "include/semphr.h"
 
 // Stellaris library includes.
-#include "inc/lm3s1968.h"
+#include "inc\lm3s1968.h"
 #include "inc\hw_types.h"
 #include "inc\hw_memmap.h"
 #include "driverlib/sysctl.h"
@@ -47,6 +47,17 @@
 #define INCLUDE_vTaskDelay 1
 #define INCLUDE_vTaskDelete 1
 
+#define TEST0_REQ '0'
+//#define TEST1_REQ '1'
+#define TEST2_REQ '2'
+#define TEST3_REQ '3'
+#define TEST4_REQ '4'
+#define TEST5_REQ '5'
+#define TEST6_REQ '6'
+#define TEST7_REQ '7'
+#define TEST8_REQ '8'
+#define TEST9_REQ '9'
+
 // Test manager prototype
 void Test_Manager(void);
 
@@ -55,7 +66,6 @@ void Test_Manager(void);
 
 int main( void )
  {
-
     // Test initialisation function.
     test_init();
 
@@ -65,6 +75,12 @@ int main( void )
 
 	// Create test management task.
     xTaskCreate(Test_Manager, "MNG", 240, NULL, 1, NULL );
+
+//	  test_gpio_a_startup();
+//    test_gpio_b_startup();
+//    test_gpio_c_startup();
+//    test_gpio_d_startup();
+//    test_gpio_e_startup();
 
 	// Start the scheduler so the tasks start executing.
 	vTaskStartScheduler();	
@@ -85,7 +101,9 @@ void Test_Manager()
 	char cReceived;
 
 	// State list for test manager.
-	typedef enum states {IDLE, TEST0, TEST1, TEST2, TEST3, TEST4} CurrState;
+	typedef enum states {IDLE, TEST0, /*TEST1,*/ TEST2, TEST3, TEST4,
+		TEST5, TEST6, TEST7, TEST8, TEST9} CurrState;	//TODO change to match names in spec ie TEST_G_a, TEST_U_a...
+
 	CurrState state = IDLE;
 
 	xTestMutex = xSemaphoreCreateMutex();
@@ -101,66 +119,123 @@ void Test_Manager()
 
 	for( ;; )
 	{
-		if(state == IDLE) //No tests are running.
+		switch(state)
 		{
+		case IDLE:
 			if (xCOMMS_FROM_PC_Queue !=0)
 			{
 				if (xQueueReceive(xCOMMS_FROM_PC_Queue, &cReceived, (portTickType)10))
 				{
-					if (cReceived == '0') //Command to run test 0.
+					switch(cReceived)
 					{
+					case TEST0_REQ :
 						test_uart_a_startup();
 						state = TEST0;
-					} else if (cReceived == '2') //Command to run test 3.
-					{
+						break;
+					// TODO: add test 1?
+					case TEST2_REQ :
 						test_uart_ci_startup();
 						state = TEST2;
-					} else if (cReceived == '3') //Command to run test 3.
-					{
+						break;
+					case TEST3_REQ :
 						test_uart_cii_startup();
 						state = TEST3;
-					} else if (cReceived == '4') //Command to run test 4.
-					{
+						break;
+					case TEST4_REQ :
 						test_uart_d_startup();
 						state = TEST4;
-					} else
-					{
+						break;
+					case TEST5_REQ :
+						test_gpio_a_startup();
+						state = TEST5;
+						break;
+					case TEST6_REQ :
+						test_gpio_b_startup();
+						state = TEST6;
+						break;
+					case TEST7_REQ :
+						test_gpio_c_startup();
+						state  = TEST7;
+						break;
+					case TEST8_REQ:
+						test_gpio_d_startup();
+						state = TEST8;
+						break;
+					case TEST9_REQ:
+						test_gpio_e_startup();
+						state = TEST9;
+						break;
+					default:
 						RIT128x96x4StringDraw("Invalid test number", 5, 20, 30);
+						break;
 					}
-
-					//Timeout is required for all tests, so is always included.
-
 				}
 
 			}
-		} else if (state == TEST0) //Test 0 is running.
-		{
+			break;
+		case TEST0 :
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
 				test_uart_a_shutdown();
 				state = IDLE;
 			}
-		} else if (state == TEST2) //Test 2 is running.
-		{
+			break;
+		case TEST2 :
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
 				test_uart_ci_shutdown();
 				state = IDLE;
 			}
-		} else if (state == TEST3) //Test 3 is running.
-		{
+			break;
+		case TEST3:
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
 				test_uart_cii_shutdown();
 				state = IDLE;
 			}
-		} else if (state == TEST4) //Test 4 is running.
-		{
+			break;
+		case TEST4:
 			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
 			{
 				test_uart_d_shutdown();
 				state = IDLE;
 			}
+			break;
+		case TEST5:
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_gpio_a_shutdown();
+				state = IDLE;
+			}
+			break;
+		case TEST6:
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_gpio_b_shutdown();
+				state = IDLE;
+			}
+			break;
+		case TEST7:
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_gpio_c_shutdown();
+				state = IDLE;
+			}
+			break;
+		case TEST8:
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_gpio_d_shutdown();
+				state = IDLE;
+			}
+			break;
+		case TEST9:
+			if (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdTRUE)
+			{
+				test_gpio_e_shutdown();
+				state = IDLE;
+			}
+			break;
 		}
 
 	}

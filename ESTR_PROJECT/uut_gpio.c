@@ -13,12 +13,12 @@
 int g_num_pulses = MAX_NUM_PULSES;
 
 // Globals
-int g_airspeed_pulse_count = 0;
+int g_airspeed_pulse_count = -1; // Initialise to -1 so that results are not saved for the first cycle
 stopwatch_t g_airspeed_stopwatch;
 int g_airspeed_response_flags[MAX_NUM_PULSES] = {0};
 unsigned int g_airspeed_times[MAX_NUM_PULSES] = {0};
 //
-int g_transponder_pulse_count = 0;
+int g_transponder_pulse_count = -1;
 stopwatch_t g_transponder_stopwatch;
 int g_transponder_response_flags[MAX_NUM_PULSES] = {0};
 unsigned int g_transponder_times[MAX_NUM_PULSES] = {0};
@@ -41,7 +41,7 @@ void airspeed_pulse_isr(void)
 
 //	GPIOPinWrite(GPIO_PORTC_BASE, (1<<2), (1<<2));
 
-	if(g_airspeed_pulse_count >= 1)
+	if(g_airspeed_pulse_count >= 0)
 		// Proccess last latency measurement
 		g_airspeed_times[g_airspeed_pulse_count] = stopwatch_get_time_us(&g_airspeed_stopwatch);
 
@@ -62,7 +62,7 @@ void transponder_pulse_isr(void)
 {
 	PWMGenIntClear(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD);
 
-	if(g_transponder_pulse_count >= 1)
+	if(g_transponder_pulse_count >= 0)
 		g_transponder_times[g_transponder_pulse_count] = stopwatch_get_time_us(&g_transponder_stopwatch);	//TODO: consider if the response hasnt occured
 
 	g_transponder_pulse_count++;
@@ -107,12 +107,18 @@ int test_b_output_toggle(void)
 	static int state = 0;
 	static int num_waits = 1;
 
-	if (count >= 3 && state == 0)
+	// generates 3 pulses, looks like 2 on a scope
+	// but a very narrow pulse is generated on the cycle where
+	// PWM is disabled, this is slightly hacky, but
+	// the pulse is reliably recieved by the uut.
+ 	if (count >= 2 && state == 0)
 	{
 		state = 1;
 		count = 0;
 
 		PWMOutputState(PWM0_BASE, PWM_GEN_1_BIT, 0); //Disable PWM output
+
+		return 0; // Because a pulse is still generated this cycle
 	}
 	else if (count > num_waits + 5 && state == 1)
 	{
@@ -122,6 +128,7 @@ int test_b_output_toggle(void)
 		count = 0;
 
 		PWMOutputState(PWM0_BASE, PWM_GEN_1_BIT, 1); // Reenable output
+
 	}
 
 	count++;
@@ -140,63 +147,13 @@ void airspeed_response_isr(void)
 
 /*-----------------------------------------------------------*/
 
-// ISR responds to transponder & kernel interrupts
-void transponder_response_isr(void)	//TODO: fix names
+// ISR responds to transponder interrupts
+void transponder_response_isr(void)
 {
 	GPIOPinIntClear(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 	stopwatch_stop(&g_transponder_stopwatch);
 	g_transponder_response_flags[g_transponder_pulse_count]++;
 }
-
-/*===================BACKGROUND TASKS========================*/
-
-// TODO: move to tests module
-//void test_one_frequency_mod(void)
-//{
-//	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
-//	static char direction = 0;
-//	static int period = TEST_ONE_MAX_PERIOD_US;
-//	for(;;)
-//	{
-//		if (direction == 0)
-//		{
-//			period-= TEST_ONE_FREQ_STEP_US;
-//			if (period < TEST_ONE_MIN_PERIOD_US)
-//				direction = 1;
-//		}
-//		else
-//		{
-//			period+= TEST_ONE_FREQ_STEP_US;
-//			if (period > TEST_ONE_MAX_PERIOD_US)
-//				direction = 0;
-//		}
-//		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
-//		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
-//		vTaskDelay(iTaskDelayPeriod);
-//	}
-//}
-
-/*-----------------------------------------------------------*/
-
-// TODO: move to tests module
-//void test_two_frequency_mod(void)
-//{
-//	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
-//	static int period = TEST_TWO_INIT_PERIOD_US;
-//	for (;;)
-//	{
-//		if (period > TEST_TWO_MIN_PERIOD_US)
-//		{
-//			period -= TEST_TWO_FREQ_STEP_US;
-//		}
-//
-//		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
-////		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
-//		vTaskDelay(iTaskDelayPeriod);
-//	}
-//}
-
-
 
 
 

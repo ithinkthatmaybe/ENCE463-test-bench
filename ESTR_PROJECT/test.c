@@ -29,7 +29,7 @@ void test_init(void)
 
 	// UART initialisatoin
 	InitUART();
-//	InitGPIO ();
+//	InitGPIO ();  Not defined
 	Init_PC_UART();
 
 	// GPIO initialisation
@@ -49,13 +49,13 @@ void test_init(void)
 	// Configure transponder input
 	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 
 	// Configure airspeed pulse generation
 	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMIntDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
 	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
 	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
 
@@ -63,7 +63,7 @@ void test_init(void)
 	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
 	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
 	PWMIntDisable(PWM0_BASE, PWM_GEN_2);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN);
 	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
 	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
 }
@@ -514,12 +514,16 @@ void test_gpio_a_startup(void)
 
 void test_gpio_a_shutdown(void)
 {
+	vTaskDelete(xGPIO_a);
+
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
 	// Disable PWM outputs
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
+
+	g_airspeed_pulse_count = -1;
 }
 
 void test_gpio_b_startup(void)
@@ -529,6 +533,8 @@ void test_gpio_b_startup(void)
 
  void test_gpio_b_shutdown(void)
  {
+	vTaskDelete(xGPIO_b);
+
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
@@ -538,6 +544,8 @@ void test_gpio_b_startup(void)
 	// Disable PWM outputs
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
+
+	g_airspeed_pulse_count = -1;
  }
 
 void test_gpio_c_startup(void)
@@ -547,6 +555,8 @@ void test_gpio_c_startup(void)
 
 void test_gpio_c_shutdown(void)
 {
+	vTaskDelete(xGPIO_c);
+
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
@@ -554,6 +564,9 @@ void test_gpio_c_shutdown(void)
 	// Disable PWM outputs
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
+
+	g_airspeed_pulse_count = -1;
+	g_transponder_pulse_count = -1;
 }
 
 void test_gpio_d_startup(void)
@@ -563,6 +576,8 @@ void test_gpio_d_startup(void)
 
 void test_gpio_d_shutdown(void)
 {
+	vTaskDelete(xGPIO_d);
+
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
@@ -570,17 +585,22 @@ void test_gpio_d_shutdown(void)
 	// Disable PWM outputs
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
+
+	g_airspeed_pulse_count = -1;
+	g_transponder_pulse_count = -1;
 }
 
 void test_gpio_e_startup(void)
 {
-	xTaskCreate(vGPIO_e, "gpio_test_e", 240, NULL, 2, &xGPIO_e);
+	xTaskCreate(vGPIO_e, "gpio_test_e", 600, NULL, 2, &xGPIO_e);
 }
 
 
 
 void test_gpio_e_shutdown(void)
 {
+	vTaskDelete(xGPIO_e);
+
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
@@ -592,6 +612,9 @@ void test_gpio_e_shutdown(void)
 	// Disable PWM outputs
 	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 0);
+
+
+	g_transponder_pulse_count = -1;
 }
 
 
@@ -599,6 +622,8 @@ void test_gpio_e_shutdown(void)
 
 void vGPIO_a(void)
 {
+	int iTaskDelayPeriod = 1 / portTICK_RATE_MS;
+
 	// Register Airspeed response ISR
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
@@ -620,7 +645,8 @@ void vGPIO_a(void)
 	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
-	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
+	// Frequency modulation variables
+
 	static char direction = 0;
 	static int period = TEST_ONE_MAX_PERIOD_US;
 	for(;;)
@@ -640,18 +666,17 @@ void vGPIO_a(void)
 		}
 		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
 		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
-		vTaskDelay(iTaskDelayPeriod);
 
 
 		if (g_airspeed_pulse_count >= MAX_NUM_PULSES) // Test finished
 		{
-			airspeed_response_results.test_type = '1';
+			airspeed_response_results.test_type = '5';
 			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
 			airspeed_response_results.num_of_elements = MAX_NUM_PULSES;
 			airspeed_response_results.test_string = (void *) &airspeed_response_id;
 			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
 
-			airspeed_latency_results.test_type = '1';
+			airspeed_latency_results.test_type = '5';
 			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
 			airspeed_latency_results.num_of_elements = MAX_NUM_PULSES;
 			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
@@ -666,18 +691,20 @@ void vGPIO_a(void)
 			}
 
 		}
-
+		vTaskDelay(iTaskDelayPeriod);
 	}
 }
 
 void vGPIO_b (void)
 {
+	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
+
 	// Register Airspeed response ISR
 	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
 	// Airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD_US*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MIN_PERIOD_US*CYCLES_PER_US/2);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_TWO_INIT_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_TWO_MIN_PERIOD_US*CYCLES_PER_US/2);
 
 	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
 
@@ -694,18 +721,27 @@ void vGPIO_b (void)
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
 
+	static int period = TEST_TWO_INIT_PERIOD_US;
+
 	for (;;)
 	{
+
+//		if (period > TEST_TWO_MIN_PERIOD_US + TEST_TWO_FREQ_STEP_US)
+//		{
+//			period -= TEST_TWO_FREQ_STEP_US;
+//			PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+//		}
+
 		// End of test
 		if (g_airspeed_pulse_count >= MAX_NUM_PULSES)
 		{
-			airspeed_response_results.test_type = '1';
+			airspeed_response_results.test_type = '6';
 			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
 			airspeed_response_results.num_of_elements = MAX_NUM_PULSES;
 			airspeed_response_results.test_string =(void *) &airspeed_response_id;
 			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
 
-			airspeed_latency_results.test_type = '1';
+			airspeed_latency_results.test_type = '6';
 			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
 			airspeed_latency_results.num_of_elements = MAX_NUM_PULSES;
 			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
@@ -718,6 +754,8 @@ void vGPIO_b (void)
 			{
 				vTaskDelay(500);
 			}
+
+			vTaskDelay(iTaskDelayPeriod);
 		}
 
 	}
@@ -768,25 +806,25 @@ void vGPIO_c (void)
 	{
 		if (g_airspeed_pulse_count >= g_num_pulses && g_transponder_pulse_count >= g_num_pulses)
 		{
-			airspeed_response_results.test_type = '1';
+			airspeed_response_results.test_type = '7';
 			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
 			airspeed_response_results.num_of_elements = g_num_pulses;
 			airspeed_response_results.test_string =(void *) &airspeed_response_id;
 			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
 
-			airspeed_latency_results.test_type = '1';
+			airspeed_latency_results.test_type = '7';
 			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
 			airspeed_latency_results.num_of_elements = g_num_pulses;
 			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
 			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
 
-			transponder_response_results.test_type = '1';
+			transponder_response_results.test_type = '7';
 			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
 			transponder_response_results.num_of_elements = g_num_pulses;
 			transponder_response_results.test_string =(void *) &transponder_response_id;
 			transponder_response_results.test_string_len = strlen(transponder_response_id);
 
-			transponder_latency_results.test_type = '1';
+			transponder_latency_results.test_type = '7';
 			transponder_latency_results.test_data = (void *) &g_transponder_times;
 			transponder_latency_results.num_of_elements = g_num_pulses;
 			transponder_latency_results.test_string = (void *) &transponder_latency_id;
@@ -849,25 +887,25 @@ void vGPIO_d (void)
 	{
 		if (g_airspeed_pulse_count >= g_num_pulses && g_transponder_pulse_count >= g_num_pulses)
 		{
-			airspeed_response_results.test_type = '1';
+			airspeed_response_results.test_type = '8';
 			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
 			airspeed_response_results.num_of_elements = g_num_pulses;
 			airspeed_response_results.test_string =(void *) &airspeed_response_id;
 			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
 
-			airspeed_latency_results.test_type = '1';
+			airspeed_latency_results.test_type = '8';
 			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
 			airspeed_latency_results.num_of_elements = g_num_pulses;
 			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
 			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
 
-			transponder_response_results.test_type = '1';
+			transponder_response_results.test_type = '8';
 			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
 			transponder_response_results.num_of_elements = g_num_pulses;
 			transponder_response_results.test_string =(void *) &transponder_response_id;
 			transponder_response_results.test_string_len = strlen(transponder_response_id);
 
-			transponder_latency_results.test_type = '1';
+			transponder_latency_results.test_type = '8';
 			transponder_latency_results.test_data = (void *) &g_transponder_times;
 			transponder_latency_results.num_of_elements = g_num_pulses;
 			transponder_latency_results.test_string = (void *) &transponder_latency_id;
@@ -889,15 +927,16 @@ void vGPIO_d (void)
 
 void vGPIO_e(void)
 {
+	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
 	//Register Transponder response ISR
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	SysCtlPWMClockSet(SYSCTL_PWMDIV_32);
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_8);
 
 	uut_gpio_set_num_pulses(TEST_FIVE_NUM_PULSES);
 
 	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8); // TODO: somethings wrong here
 	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8/2);
 
 	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
@@ -909,36 +948,44 @@ void vGPIO_e(void)
 	Test_res* transponder_response_results_ptr = &transponder_response_results;
 	char transponder_response_id[RESULTS_ID_LEN] = "transponder_response_flags\0";
 
-	Test_res transponder_latency_results = {NULL, NULL, NULL, NULL, NULL};
-	Test_res* transponder_latency_results_ptr = &transponder_latency_results;
-	char transponder_latency_id[RESULTS_ID_LEN] = "transponder_latency\0";
+	Test_res transponder_message_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* transponder_message_results_ptr = &transponder_message_results;
 
+	char buffer[300];
+	char buff;
+	int i = 0;
 	for (;;)
 	{
+		while(xQueueReceive(xUARTReadQueue, &buff, (portTickType)10))
+		{
+			buffer[i++] = buff;
+		}
+
 		if (g_transponder_pulse_count >= g_num_pulses)
 		{
-			transponder_response_results.test_type = '1';
+			vTaskDelay(500 / portTICK_RATE_MS); // Wait for last uart characters to be recieved
+
+			transponder_response_results.test_type = '9';
 			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
 			transponder_response_results.num_of_elements = g_num_pulses;
 			transponder_response_results.test_string =(void *) &transponder_response_id;
 			transponder_response_results.test_string_len = strlen(transponder_response_id);
 
-			transponder_latency_results.test_type = '1';
-			transponder_latency_results.test_data = (void *) &g_transponder_times;
-			transponder_latency_results.num_of_elements = g_num_pulses;
-			transponder_latency_results.test_string = (void *) &transponder_latency_id;
-			transponder_latency_results.test_string_len = strlen(transponder_latency_id);
+			transponder_message_results.test_type = '9';
+			transponder_message_results.test_string = (void *) &buffer;
+			transponder_message_results.test_string_len = strlen(buffer);
 
 			// TODO: send transponder DATA also
 
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
-			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_latency_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_message_results_ptr, (portTickType)10);
 
 
 			while(1)
 			{
 				vTaskDelay(500);
 			}
+			vTaskDelay(iTaskDelayPeriod);
 		}
 	}
 }

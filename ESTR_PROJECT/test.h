@@ -16,12 +16,12 @@
 // CONFIG Parameters
 
 
-#define TEST_ONE_MAX_PERIOD_US 600  //undefined unit
-#define TEST_ONE_MIN_PERIOD_US 300   //undefined unit
-#define TEST_ONE_FREQ_STEP_US 100
+#define TEST_ONE_MAX_PERIOD_US 1000  //undefined unit
+#define TEST_ONE_MIN_PERIOD_US 600   //undefined unit
+#define TEST_ONE_FREQ_STEP_US 20
 
-#define TEST_TWO_INIT_PERIOD_US 600
-#define TEST_TWO_MIN_PERIOD_US 100
+#define TEST_TWO_INIT_PERIOD_US 1000
+#define TEST_TWO_MIN_PERIOD_US 600
 #define TEST_TWO_FREQ_STEP_US 50
 
 #define TEST_THREE_PERIOD_US 600
