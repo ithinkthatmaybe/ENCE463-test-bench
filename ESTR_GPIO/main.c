@@ -48,8 +48,10 @@
 
 
 #include "pins.h"
-#include "include/stopwatch.h"
-#include "uut_gpio.h"
+#include "stopwatch.h"
+#include "PC_UART.h"
+
+#include "test.h"
 
 
 // prototypes
@@ -64,6 +66,11 @@ void vTaskTestMangement( void *pvParameters ); // not yet implimented
 
 int main( void )
 {
+
+	// TODO: remove, in place for monitoring isr execution time
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+//	GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, (1<<2));
+
 	IntMasterDisable();
 
 	/* Set the clocking to run from the PLL at 50 MHz.  Assumes 8MHz XTAL,
@@ -74,14 +81,18 @@ int main( void )
 	RIT128x96x4Init(1000000);
 	RIT128x96x4StringDraw("running... ", 8, 0, 4);
 
-	uut_gpio_init();
+	InitUART();
 
-//	uut_gpio_test_one_init();
-//	uut_gpio_test_two_init();
-//	uut_gpio_test_three_init();
-//	uut_gpio_test_four_init();
-	uut_gpio_test_five_init();
+	Init_PC_UART();
 
+	test_init();
+
+
+	test_gpio_a_startup();
+//	test_gpio_b_startup();
+//	test_gpio_c_startup();
+//	test_gpio_d_startup();
+//	test_gpio_e_startup();
 
 
 //	xTaskCreate( vTaskHeartbeat, "Heartbeat", 240, NULL, 1, NULL);
@@ -98,19 +109,19 @@ int main( void )
 /*-----------------------------------------------------------*/
 
 // Flash some reasurance
-void vTaskHeartbeat(void *pvParameters)
-{
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
-	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, STATUS_LED_PG2);
-	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
-	for (;;)
-	{
-		GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, STATUS_LED_PG2);
-		vTaskDelay(iTaskDelayPeriod);
-		GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, ~STATUS_LED_PG2);
-		vTaskDelay(iTaskDelayPeriod);
-	}
-}
+//void vTaskHeartbeat(void *pvParameters)
+//{
+//	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+//	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, STATUS_LED_PG2);
+//	int iTaskDelayPeriod = 500 / portTICK_RATE_MS;
+//	for (;;)
+//	{
+//		GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, STATUS_LED_PG2);
+//		vTaskDelay(iTaskDelayPeriod);
+//		GPIOPinWrite(GPIO_PORTG_BASE, STATUS_LED_PG2, ~STATUS_LED_PG2);
+//		vTaskDelay(iTaskDelayPeriod);
+//	}
+//}
 
 
 /*-----------------------------------------------------------*/
