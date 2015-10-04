@@ -109,22 +109,24 @@ def COMWorker():
     while True:
         item = COMQueue.get()
         dataLog.write(item)
-        # -check that state is waiting for start of result; change it to in test.
-        # -then get the data.
-        # -count the semicolons to find the end of the test.
-        # -change state to waiting.
-        #if ESTR.waitingForTest and COMQueue.get() == ";":
-        #    ESTR.waitingForTest = False
-        #    print(item)
         # -check if start character, $, is received.
         # -get next character which is test number.
         # -pass on to test specific function.
         # -end
         if item == ESTR.STARTCHAR:
-            subtest_number = COMQueue.get()
-            print("\n>> Sub-test number is {}".format(subtest_number))
-            COM.sendStr("{}".format(int(subtest_number)+1))
-        COMQueue.task_done()
+            #subtest_number = COMQueue.get()
+            semicolon_count = 0
+            resultString = ""
+            while semicolon_count < 2:
+                newChar = COMQueue.get()
+                resultString += newChar
+                if newChar == ";":
+                    semicolon_count += 1
+
+            COMQueue.task_done()
+            dataLog.write(resultString)
+            print(ESTR.interpretTest(resultString) )
+        #COMQueue.task_done()
 
 
 # read user input
@@ -158,7 +160,7 @@ print("\nEnter Command: ", end='')
 ESTR = LoadTest()
 dataLog = FileManager("logs/datalog{}.txt")
 try:
-    COM = Comms("COM33", 115200)
+    COM = Comms("COM41", 115200)
 except:
     quit_event.set()
     print("COM port could not be opened! Exiting...")
