@@ -6,6 +6,12 @@
  */
 
 #include "UART.h"
+#include "PC_UART.h"
+
+
+stopwatch_t UART_stopwatch;
+
+
 
 
 //*****************************************************************************
@@ -36,9 +42,41 @@ UARTIntHandler(void)
     }
 }
 
+
+void
+UART_GPIO_IntHandler(void)
+{
+    //unsigned long ulStatus;
+
+    // Get the interrrupt status.
+    //ulStatus = GPIOPinIntStatus(GPIO_PORTC_BASE, true);
+    // Clear the asserted interrupts.
+    GPIOPinIntClear(GPIO_PORTH_BASE, GPIO_PIN_2 );
+
+    if (GPIOPinRead(GPIO_PORTH_BASE,GPIO_PIN_2 ) == GPIO_PIN_2){
+    	stopwatch_start(&UART_stopwatch);
+    }
+    else
+    {
+    	int time = 1000 * stopwatch_get_time_ms(&UART_stopwatch);
+		time += stopwatch_get_time_us(&UART_stopwatch);
+
+		xQueueSendFromISR(xUART_int_queue, (void*)&time, pdFALSE );
+    // Loop while there are characters in the receive FIFO.
+    }
+
+}
+
+
 void
 UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase)
 {
+
+
+	//stopwatch_t stopwatch;
+
+
+
 	int i = 0;
     // Loop while there are more characters to send.
     while(ulCount--)
@@ -46,7 +84,7 @@ UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ul
         // Write the next character to the UART.
         UARTCharPutNonBlocking(ulBase, *pucBuffer++);
         // Delay in order to be able to send long strings over UART.
-        while (i < 1000)
+        while (i < 10000)
         {
         	i++;
         }
@@ -64,9 +102,10 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 	char cReceived;
 	int i = 0;
 	int j = 0;
-	char * buffer = (char *) calloc (exLen, sizeof(char)); // Temporary buffer for results.
+	char  buffer[100];// = (char *) calloc (exLen, sizeof(char)); // Temporary buffer for results.
 	int waiting = 0;
 	int done = 0;
+
 
 	while(!done)
 	{
@@ -109,8 +148,10 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 							*(out+j) = buffer[j];
 							j++;
 						}
+						//free(buffer);
 						break;
 					}
+
 					buffer[i++] = cReceived;
 					waiting = 0;
 
@@ -121,6 +162,7 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 							j++;
 						}
 						done = 1;
+						//free(buffer);
 					}
 				}
 			}
@@ -132,6 +174,24 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 
 void InitUART (void)
 {
+
+
+	//GPIOPinConfigure(GPIO_PA0_U0RX);
+
+
+
+	// Enable GPIO for UART fault detection
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
+	GPIOPinTypeGPIOInput(GPIO_PORTH_BASE, GPIO_PIN_2);
+	GPIOIntTypeSet(GPIO_PORTH_BASE, GPIO_PIN_2,  GPIO_BOTH_EDGES );
+	GPIOPortIntRegister(GPIO_PORTH_BASE, UART_GPIO_IntHandler); // was &airspeed_response_isr
+	GPIOPinIntEnable(GPIO_PORTH_BASE, GPIO_PIN_2);
+
+	//IntEnable(INT_UART1);
+	//IntMasterEnable();
+
+
 	// Enable UART0 and GPIO Port A.
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -150,9 +210,9 @@ void InitUART (void)
 
 
 	 // Configure the UART for 9600, 8-N-1 operation.
-	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 9600,
-						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-						  UART_CONFIG_PAR_EVEN));
+//	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
+//						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+//						  UART_CONFIG_PAR_EVEN));
 
 	 UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 9600,
 							 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
@@ -168,7 +228,8 @@ void InitUART (void)
 	// UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
 	 UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
 
-	 // Ceate required queue for reading from UART
+	 // Create required queue for reading from UART
 	 xUARTReadQueue = xQueueCreate(40, sizeof(char));
-
+	 xUART_int_queue = xQueueCreate(10, sizeof(int));
+	 stopwatch_start(&UART_stopwatch);
 }

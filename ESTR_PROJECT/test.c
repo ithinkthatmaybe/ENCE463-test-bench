@@ -8,6 +8,7 @@
 #include "test.h"
 
 #define CYCLES_PER_US (configCPU_CLOCK_HZ/1E6)
+#define RESULTS_ID_LEN 50
 
 
 // TODO: will become test one init, or will just setup pins etc
@@ -24,9 +25,12 @@ void test_init(void)
 	RIT128x96x4Init(1000000);
 	RIT128x96x4StringDraw("UART Mirror", 36, 0, 15);
 
+	vSemaphoreCreateBinary( xTEST_DONE );
+	xSemaphoreTake (xTEST_DONE, (portTickType)100);
+
 	// UART initialisatoin
 	InitUART();
-	InitGPIO ();
+	InitGPIO ();  
 	Init_PC_UART();
 
 	// GPIO initialisation
@@ -46,54 +50,75 @@ void test_init(void)
 	// Configure transponder input
 	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
-	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
 
 	// Configure airspeed pulse generation
 	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMIntDisable(PWM0_BASE, PWM_GEN_0);
-	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN); // TODO: setup sync settings
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
 	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
 	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
 
 	// Configure transponder pulse generation
 	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMIntDisable(PWM0_BASE, PWM_GEN_2);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN);
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
 }
 
 void test_uart_a_startup(void)
 {
 	xTaskCreate(vMirrorTX, "MTX", 240, NULL, 5, &xMirrorTX );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 140, NULL, 1, &xUART_int_manage);
+	//GPIOPinIntEnable(GPIO_PORTH_BASE, GPIO_PIN_2);
 }
 
 void test_uart_a_shutdown(void)
 {
 	vTaskDelete(xMirrorTX);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
+
 }
 
 void test_uart_ci_startup(void)
 {
 	xTaskCreate(vStatus, "STS", 240, NULL, 2, &xStatus );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 240, NULL, 1, &xUART_int_manage);
+
+
 }
 
 void test_uart_ci_shutdown(void)
 {
 	vTaskDelete(xStatus);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
 void test_uart_cii_startup(void)
 {
 	xTaskCreate(vEmergStatus, "STS", 240, NULL, 2, &xEmergStatus );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 240, NULL, 1, &xUART_int_manage);
 }
 
 void test_uart_cii_shutdown(void)
 {
 	vTaskDelete(xEmergStatus);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
 void test_uart_d_startup(void)
@@ -106,152 +131,10 @@ void test_uart_d_shutdown(void)
 {
 	vTaskDelete(xClockSpeed);
 	vTaskDelete(xTimeout);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
-void test_gpio_a_startup(void)
-{
-	// Register Airspeed response ISR
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Configure airspeed PWM
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2); // 50% duty
-
-	// Enable PWM output
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-
-	// Register background tasks
-//	xTaskCreate( test_one_frequency_mod, "test one Frequency variation", 1000, NULL, 1, NULL);
-}
-
-void test_gpio_a_shutdown(void)
-{
-	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Disable PWM outputs
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
-}
-
-void test_gpio_b_startup(void)
-{
-	// Register Airspeed response ISR
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD*CYCLES_PER_US/2);
-
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-
-	//register background tasks
-//	xTaskCreate( test_two_frequency_mod, "test two Frequency variation", 1000, NULL, 1, NULL);
-}
-
- void test_gpio_b_shutdown(void)
- {
-	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Register standard airspeed pulse generation isr
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
-
-	// Disable PWM outputs
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
- }
-
-void test_gpio_c_startup(void)
-{
-	// Enable response interrupts
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-
-	// Airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_THREE_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_THREE_PERIOD*CYCLES_PER_US/2);
-
-	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_THREE_PERIOD*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_THREE_PERIOD*CYCLES_PER_US/2);
-
-	// Enable pwm output
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 1);
-}
-
-void test_gpio_c_shutdown(void)
-{
-	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Disable PWM outputs
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
-}
-
-void test_gpio_d_startup(void)
-{
-	// Enable response interrupts
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Configure airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_FOUR_PERIOD_A*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_FOUR_PERIOD_A*CYCLES_PER_US/2);
-
-	// Configure transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
-
-	// Enable pwm output
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
-}
-
-void test_gpio_d_shutdown(void)
-{
-	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Disable PWM outputs
-	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
-}
-
-void test_gpio_e_startup(void)
-{
-	//Register Transponder response ISR
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_B*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_B*CYCLES_PER_US/2);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
-}
-
-void test_gpio_e_shutdown(void)
-{
-	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	// Disable PWM outputs
-	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 0);
-}
 
 /*-------------------------------TEST TASKS----------------------------*/
 
@@ -325,9 +208,9 @@ void vTimeout( void )
 // Mirror TX test task.
 void vMirrorTX( void )
 {
-	// TODO: SET THESE UP TO BE RECEIVED FROM PC
-	unsigned char mirror[50] = "`123`456";
-	char expect[50] = "ECHO ON123ECHO OFFNACKNACKNACK";
+	// The arrays are set to maximum allowed length (plus 1 for \0 character).
+	unsigned char mirror[51] = UA_MESSAGE;
+	char expect[401] = UA_RESPONSE;
 
 	// Based on length of given strings.
 	int len = strlen(mirror);
@@ -339,7 +222,7 @@ void vMirrorTX( void )
 	char timeout[8] = "Timeout";
 
 	// Variables.
-	char * buffer = (char *) malloc (expectedLen);
+	char  buffer[100]; //= (char *) malloc (expectedLen);
 	int done = 0;
 	char cReceived;
 
@@ -410,11 +293,24 @@ void vMirrorTX( void )
 				}
 			}
 		}
-
+		int i = 0;
+		int numSent = 1;
 		while (done)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
@@ -430,6 +326,9 @@ void vStatus( void )
 	// Variables.
 	char buffer[60] = {0};
 	char cReceived;
+	int statusLen = 38;
+	int transponderLen = 20;
+	int i = 0;
 
 	// Timeout control messages and setup.
 	char messageSent = 'S';
@@ -457,19 +356,72 @@ void vStatus( void )
 		// Perform the mirror.
 		mirrorUART(status, 1, UART1_BASE, maxLength, buffer);
 
+		while (i < maxLength)
+		{
+			if (i >= statusLen)
+			{
+				buffer[i] = '\0';
+			} else if (buffer[i] == 'T' && buffer[i+1] == 'P') // Only occurs if a transponder message interrupts the status message.
+			{
+				statusLen += transponderLen;
+			}
+			i++;
+
+		}
+
 		// Test passed. Send results to PC and clean up test.
 		results.test_string = buffer;
-		results.test_string_len = maxLength;
+		results.test_string_len = strlen(results.test_string);//maxLength;
 		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 
+		int i = 0;
+		int numSent = 1;
 		while (1)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
+
+void vUART_int_manage(void){
+
+	int time = 0;
+	for (;;)
+	{
+		if (xUART_int_queue !=0)
+		{
+			while (xQueueReceive(xUART_int_queue, &time, (portTickType)10))
+			{
+				// Initialising the test results struct.
+				Test_res* results_ptr;
+				Test_res results = {NULL,NULL,NULL,NULL,NULL};
+				results.test_type = 'E';
+				results.test_data = &time;
+				results.num_of_elements = 1;
+				results_ptr = &results;
+				xQueueSendFromISR(xSEND_RESULTS_Queue, (void*)&results_ptr, pdFALSE );
+			}
+		}
+	}
+
+
+
+}
+
 
 // Status test task.
 void vEmergStatus( void )
@@ -516,10 +468,24 @@ void vEmergStatus( void )
 		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 		UARTSend(reset, 1, UART1_BASE);
+		int i = 0;
+		int numSent = 1;
 		while (1)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
@@ -527,7 +493,6 @@ void vEmergStatus( void )
 // Clock speed variation test task.
 void vClockSpeed( void )
 {
-	// TODO: SET THESE UP TO BE RECEIVED FROM PC
 	unsigned char mirrorDec[10] = "-`123`";
 	unsigned char mirrorInc[10] = "+`123`";
 	char expect[20] = "ECHO ON123ECHO OFF";
@@ -622,10 +587,24 @@ void vClockSpeed( void )
 		} else if (state == FIN)
 		{
 			free(buffer);
+			int i = 0;
+			int numSent = 1;
 			while (1)
 			{
-				// When finished, wait here for task to be deleted.
-				vTaskDelay(100);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					xSemaphoreTake (xPC_SENT, (portTickType)100);
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 		}
 
@@ -641,5 +620,611 @@ void vClockSpeed( void )
 }
 
 
+//----------------------------GPIO TESTS---------------------------------//
 
+void test_gpio_a_startup(void)
+{
+	xTaskCreate(vGPIO_a, "gpio_test_a", 240, NULL, 2, &xGPIO_a);
+}
+
+void test_gpio_a_shutdown(void)
+{
+	vTaskDelete(xGPIO_a);
+
+	// Disable response isr
+	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Disable PWM outputs
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+	}
+
+	g_airspeed_pulse_count = -1;
+}
+
+void test_gpio_b_startup(void)
+{
+	xTaskCreate(vGPIO_b, "gpio_test_b", 240, NULL, 2, &xGPIO_b);
+}
+
+ void test_gpio_b_shutdown(void)
+ {
+	vTaskDelete(xGPIO_b);
+
+	// Disable response isr
+	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Register standard airspeed pulse generation isr
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+	// Disable PWM outputs
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+	}
+	g_airspeed_pulse_count = -1;
+ }
+
+void test_gpio_c_startup(void)
+{
+	xTaskCreate(vGPIO_c, "gpio_test_c", 240, NULL, 2, &xGPIO_c);
+}
+
+void test_gpio_c_shutdown(void)
+{
+	vTaskDelete(xGPIO_c);
+
+	// Disable response isr
+	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	// Disable PWM outputs
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
+
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+		g_transponder_response_flags[i] = 0;
+	}
+	g_airspeed_pulse_count = -1;
+	g_transponder_pulse_count = -1;
+}
+
+void test_gpio_d_startup(void)
+{
+	xTaskCreate(vGPIO_d, "gpio_test_d", 240, NULL, 2, &xGPIO_d);
+}
+
+void test_gpio_d_shutdown(void)
+{
+	vTaskDelete(xGPIO_d);
+
+	// Disable response isr
+	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	// Disable PWM outputs
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+		g_transponder_response_flags[i] = 0;
+	}
+	g_airspeed_pulse_count = -1;
+	g_transponder_pulse_count = -1;
+}
+
+void test_gpio_e_startup(void)
+{
+	xTaskCreate(vGPIO_e, "gpio_test_e", 600, NULL, 2, &xGPIO_e);
+}
+
+
+
+void test_gpio_e_shutdown(void)
+{
+	vTaskDelete(xGPIO_e);
+
+	// Disable response isr
+	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+
+	uut_gpio_set_num_pulses(MAX_NUM_PULSES);
+
+	// Disable PWM outputs
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 0);
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_transponder_response_flags[i] = 0;
+	}
+	g_transponder_pulse_count = -1;
+}
+
+
+
+
+void vGPIO_a(void)
+{
+	int iTaskDelayPeriod = 1 / portTICK_RATE_MS;
+
+	// Register Airspeed response ISR
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Configure airspeed PWM
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_ONE_MAX_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_ONE_MAX_PERIOD_US*CYCLES_PER_US/2); // 50% duty
+
+	// Enable PWM output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
+
+	// Initialise result structures
+	Test_res airspeed_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* airspeed_response_results_ptr = &airspeed_response_results;
+	char airspeed_response_id[RESULTS_ID_LEN] = "airspeed_response_flags\0";
+
+	Test_res airspeed_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
+	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
+
+	// Frequency modulation variables
+
+	static char direction = 0;
+	static int period = TEST_ONE_MAX_PERIOD_US;
+	for(;;)
+	{
+		// Modulate pulse frequency
+		if (direction == 0)
+		{
+			period-= TEST_ONE_FREQ_STEP_US;
+			if (period < TEST_ONE_MIN_PERIOD_US)
+				direction = 1;
+		}
+		else
+		{
+			period+= TEST_ONE_FREQ_STEP_US;
+			if (period > TEST_ONE_MAX_PERIOD_US)
+				direction = 0;
+		}
+		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+		PWMPulseWidthSet(PWM0_BASE, PWM_GEN_0, (period*CYCLES_PER_US)/2);
+
+
+		if (g_airspeed_pulse_count >= MAX_NUM_PULSES) // Test finished
+		{
+			airspeed_response_results.test_type = '5';
+			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
+			airspeed_response_results.num_of_elements = MAX_NUM_PULSES;
+			airspeed_response_results.test_string = (void *) &airspeed_response_id;
+			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
+
+			airspeed_latency_results.test_type = '5';
+			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
+			airspeed_latency_results.num_of_elements = MAX_NUM_PULSES;
+			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
+			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
+
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
+
+			int i = 0;
+			int numSent = 2;
+			while (1)
+			{
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
+			}
+
+		}
+		vTaskDelay(iTaskDelayPeriod);
+	}
+}
+
+void vGPIO_b (void)
+{
+	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
+
+	// Register Airspeed response ISR
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_TWO_INIT_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_TWO_MIN_PERIOD_US*CYCLES_PER_US/2);
+
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr_gpio_test_b);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
+	// Initialise result structures
+	Test_res airspeed_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* airspeed_response_results_ptr = &airspeed_response_results;
+	char airspeed_response_id[RESULTS_ID_LEN] = "airspeed_response_flags\0";
+
+	Test_res airspeed_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
+	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
+
+
+	static int period = TEST_TWO_INIT_PERIOD_US;
+
+	for (;;)
+	{
+
+		if (period > TEST_TWO_MIN_PERIOD_US + TEST_TWO_FREQ_STEP_US)
+		{
+			period -= TEST_TWO_FREQ_STEP_US;
+			PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+		}
+
+		// End of test
+		if (g_airspeed_pulse_count >= MAX_NUM_PULSES)
+		{
+			airspeed_response_results.test_type = '6';
+			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
+			airspeed_response_results.num_of_elements = MAX_NUM_PULSES;
+			airspeed_response_results.test_string =(void *) &airspeed_response_id;
+			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
+
+			airspeed_latency_results.test_type = '6';
+			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
+			airspeed_latency_results.num_of_elements = MAX_NUM_PULSES;
+			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
+			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
+
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
+
+			int i = 0;
+			int numSent = 2;
+			while (1)
+			{
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
+			}
+
+
+		}
+		vTaskDelay(iTaskDelayPeriod);
+	}
+}
+
+
+void vGPIO_c (void)
+{
+	// Enable response interrupts
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+
+	// Airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_THREE_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_THREE_PERIOD_US*CYCLES_PER_US/2);
+
+	// Transponder pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_THREE_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_THREE_PERIOD_US*CYCLES_PER_US/2);
+
+	// Enable pwm output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+
+	// Initialise result structures
+	Test_res airspeed_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* airspeed_response_results_ptr = &airspeed_response_results;
+	char airspeed_response_id[RESULTS_ID_LEN] = "airspeed_response_flags\0";
+
+	Test_res airspeed_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
+	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
+
+	// Initialise result structures
+	Test_res transponder_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* transponder_response_results_ptr = &transponder_response_results;
+	char transponder_response_id[RESULTS_ID_LEN] = "transponder_response_flags\0";
+
+	Test_res transponder_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* transponder_latency_results_ptr = &transponder_latency_results;
+	char transponder_latency_id[RESULTS_ID_LEN] = "transponder_latency\0";
+
+	for (;;)
+	{
+		if (g_airspeed_pulse_count >= g_num_pulses && g_transponder_pulse_count >= g_num_pulses)
+		{
+			airspeed_response_results.test_type = '7';
+			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
+			airspeed_response_results.num_of_elements = g_num_pulses;
+			airspeed_response_results.test_string =(void *) &airspeed_response_id;
+			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
+
+			airspeed_latency_results.test_type = '7';
+			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
+			airspeed_latency_results.num_of_elements = g_num_pulses;
+			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
+			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
+
+			transponder_response_results.test_type = '7';
+			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
+			transponder_response_results.num_of_elements = g_num_pulses;
+			transponder_response_results.test_string =(void *) &transponder_response_id;
+			transponder_response_results.test_string_len = strlen(transponder_response_id);
+
+			transponder_latency_results.test_type = '7';
+			transponder_latency_results.test_data = (void *) &g_transponder_times;
+			transponder_latency_results.num_of_elements = g_num_pulses;
+			transponder_latency_results.test_string = (void *) &transponder_latency_id;
+			transponder_latency_results.test_string_len = strlen(transponder_latency_id);
+
+
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_latency_results_ptr, (portTickType)10);
+
+			int i = 0;
+			int numSent = 4;
+			while (1)
+			{
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+void vGPIO_d (void)
+{
+	// Enable response interrupts
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	// Configure airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, TEST_FOUR_PERIOD_US_A*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, TEST_FOUR_PERIOD_US_A*CYCLES_PER_US/2);
+
+	// Configure transponder pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FOUR_PERIOD_US_B*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FOUR_PERIOD_US_B*CYCLES_PER_US/2);
+
+	// Enable pwm output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+
+	// Initialise result structures
+	Test_res airspeed_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* airspeed_response_results_ptr = &airspeed_response_results;
+	char airspeed_response_id[RESULTS_ID_LEN] = "airspeed_response_flags\0";
+
+	Test_res airspeed_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
+	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
+
+	// Initialise result structures
+	Test_res transponder_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* transponder_response_results_ptr = &transponder_response_results;
+	char transponder_response_id[RESULTS_ID_LEN] = "transponder_response_flags\0";
+
+	Test_res transponder_latency_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* transponder_latency_results_ptr = &transponder_latency_results;
+	char transponder_latency_id[RESULTS_ID_LEN] = "transponder_latency\0";
+
+	for (;;)
+	{
+		if (g_airspeed_pulse_count >= g_num_pulses && g_transponder_pulse_count >= g_num_pulses)
+		{
+			airspeed_response_results.test_type = '8';
+			airspeed_response_results.test_data = (void *) &g_airspeed_response_flags;
+			airspeed_response_results.num_of_elements = g_num_pulses;
+			airspeed_response_results.test_string =(void *) &airspeed_response_id;
+			airspeed_response_results.test_string_len = strlen(airspeed_response_id);
+
+			airspeed_latency_results.test_type = '8';
+			airspeed_latency_results.test_data = (void *) &g_airspeed_times;
+			airspeed_latency_results.num_of_elements = g_num_pulses;
+			airspeed_latency_results.test_string = (void *) &airspeed_latency_id;
+			airspeed_latency_results.test_string_len = strlen(airspeed_latency_id);
+
+			transponder_response_results.test_type = '8';
+			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
+			transponder_response_results.num_of_elements = g_num_pulses;
+			transponder_response_results.test_string =(void *) &transponder_response_id;
+			transponder_response_results.test_string_len = strlen(transponder_response_id);
+
+			transponder_latency_results.test_type = '8';
+			transponder_latency_results.test_data = (void *) &g_transponder_times;
+			transponder_latency_results.num_of_elements = g_num_pulses;
+			transponder_latency_results.test_string = (void *) &transponder_latency_id;
+			transponder_latency_results.test_string_len = strlen(transponder_latency_id);
+
+
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_latency_results_ptr, (portTickType)10);
+
+			int i = 0;
+			int numSent = 4;
+			while (1)
+			{
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
+			}
+		}
+	}
+}
+
+void vGPIO_e(void)
+{
+	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
+	//Register Transponder response ISR
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_8);
+
+	uut_gpio_set_num_pulses(TEST_FIVE_NUM_PULSES);
+
+	// Transponder pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8); // TODO: somethings wrong here
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8/2);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+
+
+	// Initialise result structures
+	Test_res transponder_response_results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* transponder_response_results_ptr = &transponder_response_results;
+	char transponder_response_id[RESULTS_ID_LEN] = "transponder_response_flags\0";
+
+	Test_res transponder_message_results = {NULL, NULL, NULL, NULL, NULL};
+	Test_res* transponder_message_results_ptr = &transponder_message_results;
+
+	char buffer[300];
+	char buff;
+	int i = 0;
+	for (;;)
+	{
+		while(xQueueReceive(xUARTReadQueue, &buff, (portTickType)10))
+		{
+			buffer[i++] = buff;
+		}
+
+		if (g_transponder_pulse_count >= g_num_pulses)
+		{
+			vTaskDelay(500 / portTICK_RATE_MS); // Wait for last uart characters to be recieved
+
+			transponder_response_results.test_type = '9';
+			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
+			transponder_response_results.num_of_elements = g_num_pulses;
+			transponder_response_results.test_string =(void *) &transponder_response_id;
+			transponder_response_results.test_string_len = strlen(transponder_response_id);
+
+			transponder_message_results.test_type = '9';
+			transponder_message_results.test_string = (void *) &buffer;
+			transponder_message_results.test_string_len = strlen(buffer);
+
+			// TODO: send transponder DATA also
+
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
+			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_message_results_ptr, (portTickType)10);
+
+
+			int i = 0;
+			int numSent = 2;
+			while (1)
+			{
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
+			}
+		}
+		vTaskDelay(iTaskDelayPeriod);
+	}
+}
 

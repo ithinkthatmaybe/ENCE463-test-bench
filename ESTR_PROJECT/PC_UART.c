@@ -61,9 +61,8 @@ void Init_PC_UART (void)
 	 // create pc sending task
 	 xTaskCreate(send_results_to_PC, "PC_Send", 240, NULL, 1, NULL );
 	 vSemaphoreCreateBinary( xPC_SENT );
+	 xSemaphoreTake (xPC_SENT, (portTickType)100);
 	 // used for displaying text from PC sent by UART. For testing purposes only
-
-
 }
 
 void send_results_to_PC()
@@ -81,17 +80,23 @@ void send_results_to_PC()
 		{
 			while (xQueueReceive(xSEND_RESULTS_Queue, &(results), (portTickType)10))
 			{
-				sent = 1;
 				// $ character used to detect beginning of message on PC interface.
 				UARTCharPutNonBlocking(UART0_BASE, '$');
 				UARTCharPutNonBlocking(UART0_BASE, (*results).test_type);
+				if ((*results).test_type == 'E')
+				{
+					sent = 0; // In order to not end the test when error codes are transmitted.
+				} else
+				{
+					sent = 1;
+				}
 				// Semi colon used to indicate start of data array.
 				UARTCharPutNonBlocking(UART0_BASE, ';');
 
 				temp = (*results).num_of_elements;
 				if ((*results).test_data != NULL)
 				{
-			       for (i = 0; i <  temp; i++)
+			       for (i = 0; i < temp; i++)
 			       {
 			        // convert  each long to a string
 			        sprintf(charbuff, "%d", *((*results).test_data+(i)));
@@ -103,7 +108,7 @@ void send_results_to_PC()
 			        	{
 			        		// inserts , between each data item
 			        		UARTSend(",", 1,UART0_BASE );
-			        		vTaskDelay(5);
+			        		//vTaskDelay(5);
 			        	}
 			        	// inserts semi colon to indicate end of data array
 			        	else UARTSend(";", 1,UART0_BASE );
@@ -123,12 +128,17 @@ void send_results_to_PC()
 					UARTSend(";", 1,UART0_BASE );
 
 				}
-			}
-			if (sent == 1)
-			{
-				sent = 0;
-				xSemaphoreGive(xPC_SENT);
-
+				if (sent == 1)
+				{
+					UARTSend("\r", 1,UART0_BASE );
+					xSemaphoreGive(xPC_SENT);
+					sent = 0;
+//					while (xQueueReceive(xSEND_RESULTS_Queue, &(results), (portTickType)10))
+//					{
+//						continue;
+//					}
+//					break;
+				}
 			}
 		}
 	}
