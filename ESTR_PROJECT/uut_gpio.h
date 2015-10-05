@@ -30,6 +30,8 @@
 #define CYCLES_PER_US (configCPU_CLOCK_HZ/1E6)
 #define CYCLES_PER_MS (configCPU_CLOCK_HZ/1E3)
 
+#define MAX_NUM_PULSES 200
+
 
 // CONFIG Parameters
 //#ifndef CONFIG_H_
@@ -54,7 +56,7 @@
 //
 //#endif
 
-#define MAX_NUM_PULSES 200
+
 
 // set up GPIO pins on stellaris
 void InitGPIO (void);

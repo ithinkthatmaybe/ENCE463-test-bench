@@ -638,6 +638,13 @@ void test_gpio_a_shutdown(void)
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
 
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+	}
+
 	g_airspeed_pulse_count = -1;
 }
 
@@ -660,6 +667,12 @@ void test_gpio_b_startup(void)
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 0);
 
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+	}
 	g_airspeed_pulse_count = -1;
  }
 
@@ -680,6 +693,14 @@ void test_gpio_c_shutdown(void)
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
 
+
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+		g_transponder_response_flags[i] = 0;
+	}
 	g_airspeed_pulse_count = -1;
 	g_transponder_pulse_count = -1;
 }
@@ -701,6 +722,13 @@ void test_gpio_d_shutdown(void)
 	PWMGenDisable(PWM0_BASE, PWM_GEN_0 | PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT | PWM_OUT_5_BIT, 0);
 
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_airspeed_response_flags[i] = 0;
+		g_transponder_response_flags[i] = 0;
+	}
 	g_airspeed_pulse_count = -1;
 	g_transponder_pulse_count = -1;
 }
@@ -728,7 +756,12 @@ void test_gpio_e_shutdown(void)
 	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
 	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 0);
 
-
+	// Reset results
+	int i;
+	for (i = 0; i < MAX_NUM_PULSES; i++)
+	{
+		g_transponder_response_flags[i] = 0;
+	}
 	g_transponder_pulse_count = -1;
 }
 
@@ -854,16 +887,16 @@ void vGPIO_b (void)
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
 
-	//static int period = TEST_TWO_INIT_PERIOD_US;
+	static int period = TEST_TWO_INIT_PERIOD_US;
 
 	for (;;)
 	{
 
-//		if (period > TEST_TWO_MIN_PERIOD_US + TEST_TWO_FREQ_STEP_US)
-//		{
-//			period -= TEST_TWO_FREQ_STEP_US;
-//			PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
-//		}
+		if (period > TEST_TWO_MIN_PERIOD_US + TEST_TWO_FREQ_STEP_US)
+		{
+			period -= TEST_TWO_FREQ_STEP_US;
+			PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period*CYCLES_PER_US);
+		}
 
 		// End of test
 		if (g_airspeed_pulse_count >= MAX_NUM_PULSES)
