@@ -155,5 +155,27 @@ void transponder_response_isr(void)
 	g_transponder_response_flags[g_transponder_pulse_count]++;
 }
 
+/*===================Functions========================*/
 
+void InitGPIO (void)
+{
+	// Enable GPIO port G
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+
+	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_4);
+	GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_4, GPIO_PIN_4);
+	reset_uut();
+}
+
+
+
+void reset_uut(void){
+	 GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_4, 0);
+	 int i = 0;
+	 for ( i=0 ; i >100000 ;i++)
+	 {continue;}
+	 GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_4, GPIO_PIN_4);
+	 for ( i=0 ; i >100000 ;i++)
+	 {continue;}
+}
 

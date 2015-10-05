@@ -25,6 +25,7 @@
 #include "driverlib/pin_map.h"
 #include "stdlib.h"
 #include "string.h"
+#include "stopwatch.h"
 
 //Definitions from pin_map.h, which isn't being included properly for some reason.
 //ERROR NEEDS FIXING, THIS IS NOT HOW THESE SHOULD BE INCLUDED
@@ -34,6 +35,7 @@
 #define GPIO_PD3_U1TX           0x00030C01
 
 xQueueHandle xUARTReadQueue;
+xQueueHandle xUART_int_queue;
 
 //Sends given message over UART0 channel. Requires message and length of message.
 void UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase);

@@ -8,8 +8,6 @@
 #include "test.h"
 
 #define CYCLES_PER_US (configCPU_CLOCK_HZ/1E6)
-
-
 #define RESULTS_ID_LEN 50
 
 
@@ -27,9 +25,12 @@ void test_init(void)
 	RIT128x96x4Init(1000000);
 	RIT128x96x4StringDraw("UART Mirror", 36, 0, 15);
 
+	vSemaphoreCreateBinary( xTEST_DONE );
+	xSemaphoreTake (xTEST_DONE, (portTickType)100);
+
 	// UART initialisatoin
 	InitUART();
-//	InitGPIO ();  Not defined
+	InitGPIO ();  
 	Init_PC_UART();
 
 	// GPIO initialisation
@@ -72,36 +73,52 @@ void test_uart_a_startup(void)
 {
 	xTaskCreate(vMirrorTX, "MTX", 240, NULL, 5, &xMirrorTX );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 140, NULL, 1, &xUART_int_manage);
+	//GPIOPinIntEnable(GPIO_PORTH_BASE, GPIO_PIN_2);
 }
 
 void test_uart_a_shutdown(void)
 {
 	vTaskDelete(xMirrorTX);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
+
 }
 
 void test_uart_ci_startup(void)
 {
 	xTaskCreate(vStatus, "STS", 240, NULL, 2, &xStatus );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 240, NULL, 1, &xUART_int_manage);
+
+
 }
 
 void test_uart_ci_shutdown(void)
 {
 	vTaskDelete(xStatus);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
 void test_uart_cii_startup(void)
 {
 	xTaskCreate(vEmergStatus, "STS", 240, NULL, 2, &xEmergStatus );
 	xTaskCreate(vTimeout, "TIME", 240, NULL, 2, &xTimeout );
+	xTaskCreate(vUART_int_manage, "UIM", 240, NULL, 1, &xUART_int_manage);
 }
 
 void test_uart_cii_shutdown(void)
 {
 	vTaskDelete(xEmergStatus);
 	vTaskDelete(xTimeout);
+	vTaskDelete(xUART_int_manage);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
 void test_uart_d_startup(void)
@@ -114,6 +131,8 @@ void test_uart_d_shutdown(void)
 {
 	vTaskDelete(xClockSpeed);
 	vTaskDelete(xTimeout);
+	vQueueDelete(xToTest);
+	vQueueDelete(xToTimeout);
 }
 
 
@@ -189,9 +208,9 @@ void vTimeout( void )
 // Mirror TX test task.
 void vMirrorTX( void )
 {
-	// TODO: SET THESE UP TO BE RECEIVED FROM PC
-	unsigned char mirror[50] = "`123`456";
-	char expect[50] = "ECHO ON123ECHO OFFNACKNACKNACK";
+	// The arrays are set to maximum allowed length (plus 1 for \0 character).
+	unsigned char mirror[51] = UA_MESSAGE;
+	char expect[401] = UA_RESPONSE;
 
 	// Based on length of given strings.
 	int len = strlen(mirror);
@@ -203,7 +222,7 @@ void vMirrorTX( void )
 	char timeout[8] = "Timeout";
 
 	// Variables.
-	char * buffer = (char *) malloc (expectedLen);
+	char  buffer[100]; //= (char *) malloc (expectedLen);
 	int done = 0;
 	char cReceived;
 
@@ -274,11 +293,24 @@ void vMirrorTX( void )
 				}
 			}
 		}
-
+		int i = 0;
+		int numSent = 1;
 		while (done)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
@@ -294,6 +326,9 @@ void vStatus( void )
 	// Variables.
 	char buffer[60] = {0};
 	char cReceived;
+	int statusLen = 38;
+	int transponderLen = 20;
+	int i = 0;
 
 	// Timeout control messages and setup.
 	char messageSent = 'S';
@@ -321,19 +356,72 @@ void vStatus( void )
 		// Perform the mirror.
 		mirrorUART(status, 1, UART1_BASE, maxLength, buffer);
 
+		while (i < maxLength)
+		{
+			if (i >= statusLen)
+			{
+				buffer[i] = '\0';
+			} else if (buffer[i] == 'T' && buffer[i+1] == 'P') // Only occurs if a transponder message interrupts the status message.
+			{
+				statusLen += transponderLen;
+			}
+			i++;
+
+		}
+
 		// Test passed. Send results to PC and clean up test.
 		results.test_string = buffer;
-		results.test_string_len = maxLength;
+		results.test_string_len = strlen(results.test_string);//maxLength;
 		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 
+		int i = 0;
+		int numSent = 1;
 		while (1)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
+
+void vUART_int_manage(void){
+
+	int time = 0;
+	for (;;)
+	{
+		if (xUART_int_queue !=0)
+		{
+			while (xQueueReceive(xUART_int_queue, &time, (portTickType)10))
+			{
+				// Initialising the test results struct.
+				Test_res* results_ptr;
+				Test_res results = {NULL,NULL,NULL,NULL,NULL};
+				results.test_type = 'E';
+				results.test_data = &time;
+				results.num_of_elements = 1;
+				results_ptr = &results;
+				xQueueSendFromISR(xSEND_RESULTS_Queue, (void*)&results_ptr, pdFALSE );
+			}
+		}
+	}
+
+
+
+}
+
 
 // Status test task.
 void vEmergStatus( void )
@@ -380,10 +468,24 @@ void vEmergStatus( void )
 		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 		xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 		UARTSend(reset, 1, UART1_BASE);
+		int i = 0;
+		int numSent = 1;
 		while (1)
 		{
 			// Loop here while waiting for test manager to delete the task.
-			vTaskDelay(100);
+
+			if (i < numSent)
+			{
+				xSemaphoreTake (xPC_SENT, (portTickType)100);
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
+				{
+					vTaskDelay(100);
+				}
+			}
 		}
 	}
 }
@@ -391,7 +493,6 @@ void vEmergStatus( void )
 // Clock speed variation test task.
 void vClockSpeed( void )
 {
-	// TODO: SET THESE UP TO BE RECEIVED FROM PC
 	unsigned char mirrorDec[10] = "-`123`";
 	unsigned char mirrorInc[10] = "+`123`";
 	char expect[20] = "ECHO ON123ECHO OFF";
@@ -424,7 +525,7 @@ void vClockSpeed( void )
 	results_ptr = &results;
 
 	// Reset the UUT and wait for it to boot up.
-//	reset_uut();
+	reset_uut();
 	vTaskDelay(500);
 
 	// Clears the queue before running the test to ensure predictable operation.
@@ -459,7 +560,7 @@ void vClockSpeed( void )
 		{
 			// Stop the timeout stopwatch.
 			xQueueSendToBack( xToTimeout, &ended, (portTickType)10);
-//			reset_uut();
+			reset_uut();
 			vTaskDelay(100);
 			decreases = changes;
 
@@ -477,7 +578,7 @@ void vClockSpeed( void )
 			data[1] = decreases;
 			results.test_data = data;
 			results.num_of_elements = 2;
-//			reset_uut();
+			reset_uut();
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
 
 			RIT128x96x4StringDraw(strbuff, 5, 20, 30);
@@ -486,10 +587,24 @@ void vClockSpeed( void )
 		} else if (state == FIN)
 		{
 			free(buffer);
+			int i = 0;
+			int numSent = 1;
 			while (1)
 			{
-				// When finished, wait here for task to be deleted.
-				vTaskDelay(100);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					xSemaphoreTake (xPC_SENT, (portTickType)100);
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 		}
 
@@ -685,9 +800,27 @@ void vGPIO_a(void)
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
 
-			while(1)
+			int i = 0;
+			int numSent = 2;
+			while (1)
 			{
-				vTaskDelay(500);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 
 		}
@@ -721,7 +854,7 @@ void vGPIO_b (void)
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
 
-	static int period = TEST_TWO_INIT_PERIOD_US;
+	//static int period = TEST_TWO_INIT_PERIOD_US;
 
 	for (;;)
 	{
@@ -750,14 +883,32 @@ void vGPIO_b (void)
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_response_results_ptr, (portTickType)10);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&airspeed_latency_results_ptr, (portTickType)10);
 
-			while(1)
+			int i = 0;
+			int numSent = 2;
+			while (1)
 			{
-				vTaskDelay(500);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 
-			vTaskDelay(iTaskDelayPeriod);
-		}
 
+		}
+		vTaskDelay(iTaskDelayPeriod);
 	}
 }
 
@@ -836,9 +987,27 @@ void vGPIO_c (void)
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_latency_results_ptr, (portTickType)10);
 
-			while(1)
+			int i = 0;
+			int numSent = 4;
+			while (1)
 			{
-				vTaskDelay(500);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 		}
 	}
@@ -917,9 +1086,27 @@ void vGPIO_d (void)
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_latency_results_ptr, (portTickType)10);
 
-			while(1)
+			int i = 0;
+			int numSent = 4;
+			while (1)
 			{
-				vTaskDelay(500);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
 		}
 	}
@@ -981,12 +1168,30 @@ void vGPIO_e(void)
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_message_results_ptr, (portTickType)10);
 
 
-			while(1)
+			int i = 0;
+			int numSent = 2;
+			while (1)
 			{
-				vTaskDelay(500);
+				// Loop here while waiting for test manager to delete the task.
+
+				if (i < numSent)
+				{
+					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
+					{
+						continue;
+					}
+					i++;
+				} else
+				{
+					xSemaphoreGive(xTEST_DONE);
+					while (1)
+					{
+						vTaskDelay(100);
+					}
+				}
 			}
-			vTaskDelay(iTaskDelayPeriod);
 		}
+		vTaskDelay(iTaskDelayPeriod);
 	}
 }
 

@@ -56,6 +56,12 @@
 
 #define MAX_NUM_PULSES 200
 
+// set up GPIO pins on stellaris
+void InitGPIO (void);
+
+// Reset UUT (active low)
+void reset_uut(void);
+
 // Globals
 extern int g_num_pulses;
 

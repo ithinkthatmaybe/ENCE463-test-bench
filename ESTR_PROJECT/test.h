@@ -32,10 +32,11 @@
 #define TEST_FIVE_PERIOD_MS 30
 #define TEST_FIVE_NUM_PULSES 5
 
+xSemaphoreHandle xTEST_DONE;
 
 void test_init(void); // Enable and configure peripherals used for testing
 
-/// UART tests
+// UART tests
 
 void vMirrorTX( void );
 xTaskHandle xMirrorTX;
@@ -47,25 +48,19 @@ void vStatus( void );
 xTaskHandle xStatus;
 void vEmergStatus( void );
 xTaskHandle xEmergStatus;
-
-// GPIO tests
-void vGPIO_a(void);
-xTaskHandle xGPIO_a;
-void vGPIO_b(void);
-xTaskHandle xGPIO_b;
-void vGPIO_c(void);
-xTaskHandle xGPIO_c;
-void vGPIO_d(void);
-xTaskHandle xGPIO_d;
-void vGPIO_e(void);
-xTaskHandle xGPIO_e;
-
-
+void vUART_int_manage(void);
+xTaskHandle xUART_int_manage;
 xQueueHandle xToTest;
 xQueueHandle xToTimeout;
 
+// UART tests
+
 void test_uart_a_startup(void);  // Startup function registers ISRs and Registers tasks and enables specific interupts
 void test_uart_a_shutdown(void); // Undoes startup function
+// Message to send. Maximum 50 characters.
+#define UA_MESSAGE "`123456789012345678901234567890`456"
+// Expected response. Maximum 400 characters.
+#define UA_RESPONSE "ECHO ON123456789012345678901234567890ECHO OFFNACKNACKNACK";
 
 void test_uart_b_startup(void);
 void test_uart_b_shutdown(void);
@@ -78,6 +73,19 @@ void test_uart_cii_shutdown(void);
 
 void test_uart_d_startup(void);
 void test_uart_d_shutdown(void);
+
+// GPIO tests
+
+void vGPIO_a(void);
+xTaskHandle xGPIO_a;
+void vGPIO_b(void);
+xTaskHandle xGPIO_b;
+void vGPIO_c(void);
+xTaskHandle xGPIO_c;
+void vGPIO_d(void);
+xTaskHandle xGPIO_d;
+void vGPIO_e(void);
+xTaskHandle xGPIO_e;
 
 // GPIO tests
 
