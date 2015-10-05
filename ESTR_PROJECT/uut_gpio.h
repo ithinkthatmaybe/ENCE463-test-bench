@@ -21,7 +21,6 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pwm.h"
-#include "drivers/rit128x96x4.h"
 
 #include "pins.h"
 #include "stopwatch.h"
