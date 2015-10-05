@@ -70,26 +70,28 @@ def interpretCommand(command_chr):
     # Load the test onto Stellaris if input is valid.
     elif command_chr == "1":
         _path = os.getcwd() + "/testBins/uart.bin"
+        ESTR.currentTest = ESTR.UART
         ESTR.loadTest(_path)
-        ESTR.currentTest = ESTR.UART1
+        
     elif command_chr == "2":
         _path = os.getcwd() + "/testBins/gpio.bin"
-        ESTR.loadTest(_path)
         ESTR.currentTest = ESTR.GPIO
+        ESTR.loadTest(_path)
+        
     elif command_chr == "3":
         _path = os.getcwd() + "/testBins/test_blank_1.bin"
-        ESTR.loadTest(_path)
         ESTR.currentTest = ESTR.BLANK
+        ESTR.loadTest(_path)
+        
     elif command_chr == "4":
         _path = os.getcwd() + "/testBins/test_blank_2.bin"
-        ESTR.loadTest(_path)
         ESTR.currentTest = ESTR.BLANK
+        ESTR.loadTest(_path)
+        
     elif command_chr == "r":
         ESTR.resetESTR()
-    elif command_chr =="m":
+    elif command_chr in ["m", "h"]:
     	printMenu()
-    elif command_chr =="h":
-        printMenu()
     elif command_chr =="q":
         quit_event.set()
     else:
@@ -119,13 +121,17 @@ def COMWorker():
             resultString = ""
             while semicolon_count < 2:
                 newChar = COMQueue.get()
-                resultString += newChar
+                #remove those pesky null bytes
+                if newChar != "\0":
+                    #print("ARGH!")
+                    resultString += newChar
                 if newChar == ";":
                     semicolon_count += 1
+                #COMQueue.task_done()
 
-            COMQueue.task_done()
             dataLog.write(resultString)
             print(ESTR.interpretTest(resultString) )
+            COMQueue.task_done()
         #COMQueue.task_done()
 
 
@@ -160,7 +166,7 @@ print("\nEnter Command: ", end='')
 ESTR = LoadTest()
 dataLog = FileManager("logs/datalog{}.txt")
 try:
-    COM = Comms("COM41", 115200)
+    COM = Comms("COM39", 115200)
 except:
     quit_event.set()
     print("COM port could not be opened! Exiting...")
