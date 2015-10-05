@@ -1151,16 +1151,8 @@ void vGPIO_e(void)
 	//Register Transponder response ISR
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	SysCtlPWMClockSet(SYSCTL_PWMDIV_8);
+	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (1<<3));
 
-	uut_gpio_set_num_pulses(TEST_FIVE_NUM_PULSES);
-
-	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8); // TODO: somethings wrong here
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8/2);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
 
 
 	// Initialise result structures
@@ -1171,14 +1163,50 @@ void vGPIO_e(void)
 	Test_res transponder_message_results = {NULL, NULL, NULL, NULL, NULL};
 	Test_res* transponder_message_results_ptr = &transponder_message_results;
 
-	char buffer[300];
-	char buff;
+	// Variables.
+	int maxLength = 60;
+	char buffer[60] = {0};
+	char cReceived;
+	int transponderLen = 20;
 	int i = 0;
 	for (;;)
+
+	// Clears the queue before running the test to ensure predictable operation.
+//	if (xUARTReadQueue !=0)
+//	{
+//		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+//		{
+//			cReceived = 0;
+//		}
+//	}
+
+	// Generate a single pulse on the transponder pulse output,
+	// because we're only testing one pulse at this stage
+
+	//TODO: test for several pulses
+	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), (1<<3));
+	vTaskDelay(50 / portTICK_RATE_MS);
+	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), ~(1<<3));
+
+	vTaskDelay(500 / portTICK_RATE_MS); //Wait to let the uut respond
+
 	{
-		while(xQueueReceive(xUARTReadQueue, &buff, (portTickType)10))
+		// Clears the queue before running the test to ensure predictable operation.
+
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
 		{
-			buffer[i++] = buff;
+			buffer[i++] = cReceived;
+		}
+
+		i = 0;
+
+		while (i < maxLength)
+		{
+			if (i >= transponderLen)
+			{
+				buffer[i] = '\0';
+			}
+			i++;
 		}
 
 		if (g_transponder_pulse_count >= g_num_pulses)

@@ -108,7 +108,7 @@ void send_results_to_PC()
 			        	{
 			        		// inserts , between each data item
 			        		UARTSend(",", 1,UART0_BASE );
-			        		//vTaskDelay(5);
+			        		vTaskDelay(1);
 			        	}
 			        	// inserts semi colon to indicate end of data array
 			        	else UARTSend(";", 1,UART0_BASE );

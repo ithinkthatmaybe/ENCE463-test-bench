@@ -29,8 +29,8 @@
 #define TEST_FOUR_PERIOD_US_A 600
 #define TEST_FOUR_PERIOD_US_B 599
 
-#define TEST_FIVE_PERIOD_MS 30
-#define TEST_FIVE_NUM_PULSES 1
+//#define TEST_FIVE_PERIOD_MS 30
+//#define TEST_FIVE_NUM_PULSES 1
 
 xSemaphoreHandle xTEST_DONE;
 
