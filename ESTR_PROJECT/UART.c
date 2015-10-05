@@ -84,11 +84,23 @@ UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ul
         // Write the next character to the UART.
         UARTCharPutNonBlocking(ulBase, *pucBuffer++);
         // Delay in order to be able to send long strings over UART.
-        while (i < 10000)
+
+        if (ulBase == UART1_BASE)
         {
-        	i++;
+        	while (i < 10000)
+			{
+				i++;
+			}
+			i = 0;
         }
-        i = 0;
+        else
+        {
+        	while (i < 400)
+			{
+				i++;
+			}
+			i = 0;
+        }
     }
 }
 
@@ -106,7 +118,13 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 	int waiting = 0;
 	int done = 0;
 
-
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
 	while(!done)
 	{
 		if (!waiting)

@@ -22,8 +22,6 @@ void test_init(void)
 	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_2);
 	IntMasterEnable();
 	// Initialize the OLED display and write status.
-	RIT128x96x4Init(1000000);
-	RIT128x96x4StringDraw("UART Mirror", 36, 0, 15);
 
 	vSemaphoreCreateBinary( xTEST_DONE );
 	xSemaphoreTake (xTEST_DONE, (portTickType)100);
@@ -169,9 +167,6 @@ void vTimeout( void )
 				{
 					stopped = 0;
 					stopwatch_start(&stopwatch);
-				} else
-				{
-					RIT128x96x4StringDraw("ERROR STOPWATCH", 5, 20, 30);
 				}
 			}
 		} else if (stopped == 0)
@@ -259,7 +254,6 @@ void vMirrorTX( void )
 			results.test_string = pass;
 			results.test_string_len = strlen(results.test_string);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-			RIT128x96x4StringDraw("Expected response", 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
 			done = 1;
@@ -269,7 +263,6 @@ void vMirrorTX( void )
 			results.test_string = fail;
 			results.test_string_len = strlen(results.test_string);
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-			RIT128x96x4StringDraw("Fail wrong received", 5, 10, 30);
 			xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 			free(buffer);
 			done = 1;
@@ -286,7 +279,6 @@ void vMirrorTX( void )
 					results.test_string = timeout;
 					results.test_string_len = strlen(results.test_string);
 					xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-					RIT128x96x4StringDraw("Fail timeout", 5, 20, 30);
 					xQueueSendToBack( xToTimeout, &finished, (portTickType)10);
 					free(buffer);
 					done = 1;
@@ -509,6 +501,7 @@ void vClockSpeed( void )
 	char * buffer = (char *) malloc (expectedLen);
 	int i = 0;
 	char cReceived;
+	int data [2]= {0};
 
 	typedef enum states {DEC, INC, FIN} CurrState;
 	CurrState state = DEC;
@@ -519,14 +512,15 @@ void vClockSpeed( void )
 	xToTimeout = xQueueCreate(10, sizeof(char));
 
 	// Initialising results struct.
-	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* results_ptr;
 	results.test_type = '4';
 	results_ptr = &results;
 
 	// Reset the UUT and wait for it to boot up.
 	reset_uut();
 	vTaskDelay(500);
+
 
 	// Clears the queue before running the test to ensure predictable operation.
 	if (xUARTReadQueue !=0)
@@ -573,15 +567,13 @@ void vClockSpeed( void )
 			// Test complete. Send results to PC and clean up test.
 			increases = changes;
 			sprintf(strbuff,"Inc: %d Dec: %d", increases, decreases);
-			int data [2]= {0};
+
 			data[0] = increases;
 			data[1] = decreases;
 			results.test_data = data;
 			results.num_of_elements = 2;
 			reset_uut();
 			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&results_ptr, (portTickType)10);
-
-			RIT128x96x4StringDraw(strbuff, 5, 20, 30);
 
 			state = FIN;
 		} else if (state == FIN)
@@ -747,6 +739,8 @@ void test_gpio_e_shutdown(void)
 	// Disable response isr
 	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));
 
 	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
 
@@ -1149,18 +1143,11 @@ void vGPIO_e(void)
 {
 	int iTaskDelayPeriod = 50 / portTICK_RATE_MS;
 	//Register Transponder response ISR
+
 	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-	SysCtlPWMClockSet(SYSCTL_PWMDIV_8);
+	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (1<<3));
 
-	uut_gpio_set_num_pulses(TEST_FIVE_NUM_PULSES);
-
-	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8); // TODO: somethings wrong here
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, TEST_FIVE_PERIOD_MS*CYCLES_PER_MS/8/2);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
 
 
 	// Initialise result structures
@@ -1171,60 +1158,96 @@ void vGPIO_e(void)
 	Test_res transponder_message_results = {NULL, NULL, NULL, NULL, NULL};
 	Test_res* transponder_message_results_ptr = &transponder_message_results;
 
-	char buffer[300];
-	char buff;
+	// Variables.
+	int maxLength = 60;
+	char buffer[60] = {0};
+	char cReceived;
+	int transponderLen = 20;
 	int i = 0;
+
+
+
+	// Clears the queue before running the test to ensure predictable operation.
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
+
+		// Generate a single pulse on the transponder pulse output,
+		// because we're only testing one pulse at this stage
+
+	//TODO: test for several pulses
+	g_transponder_pulse_count = 0;
+	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), (1<<3));
+	vTaskDelay(1);
+	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), ~(1<<3));
+
+	vTaskDelay(500 / portTICK_RATE_MS); //Wait to let the uut respond
+
 	for (;;)
 	{
-		while(xQueueReceive(xUARTReadQueue, &buff, (portTickType)10))
+		// Read response
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
 		{
-			buffer[i++] = buff;
+			buffer[i++] = cReceived;
 		}
 
-		if (g_transponder_pulse_count >= g_num_pulses)
+		i = 0;
+
+		// Append termination caracter
+		while (i < maxLength)
 		{
-			vTaskDelay(500 / portTICK_RATE_MS); // Wait for last uart characters to be recieved
-
-			transponder_response_results.test_type = '9';
-			transponder_response_results.test_data = (void *) &g_transponder_response_flags;
-			transponder_response_results.num_of_elements = g_num_pulses;
-			transponder_response_results.test_string =(void *) &transponder_response_id;
-			transponder_response_results.test_string_len = strlen(transponder_response_id);
-
-			transponder_message_results.test_type = '9';
-			transponder_message_results.test_string = (void *) &buffer;
-			transponder_message_results.test_string_len = strlen(buffer);
-
-			// TODO: send transponder DATA also
-
-			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
-			xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_message_results_ptr, (portTickType)10);
-
-
-			int i = 0;
-			int numSent = 2;
-			while (1)
+			if (i >= transponderLen)
 			{
-				// Loop here while waiting for test manager to delete the task.
+				buffer[i] = '\0';
+			}
+			i++;
+		}
 
-				if (i < numSent)
+		// Transmit back to PC
+		vTaskDelay(500 / portTICK_RATE_MS); // Wait for last uart characters to be recieved
+
+		transponder_response_results.test_type = '9';
+		transponder_response_results.test_data = (void *) &g_transponder_response_flags;
+		transponder_response_results.num_of_elements = 1;
+		transponder_response_results.test_string =(void *) &transponder_response_id;
+		transponder_response_results.test_string_len = strlen(transponder_response_id);
+
+		transponder_message_results.test_type = '9';
+		transponder_message_results.test_string = (void *) &buffer;
+		transponder_message_results.test_string_len = strlen(buffer);
+
+		// TODO: send transponder DATA also
+
+		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_response_results_ptr, (portTickType)10);
+		xQueueSendToBack( xSEND_RESULTS_Queue, (void*)&transponder_message_results_ptr, (portTickType)10);
+
+
+		int i = 0;
+		int numSent = 2;
+		while (1)
+		{
+			// Loop here while waiting for test manager to delete the task.
+
+			if (i < numSent)
+			{
+				while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
 				{
-					while (xSemaphoreTake (xPC_SENT, (portTickType)100) == pdFALSE)
-					{
-						continue;
-					}
-					i++;
-				} else
+					continue;
+				}
+				i++;
+			} else
+			{
+				xSemaphoreGive(xTEST_DONE);
+				while (1)
 				{
-					xSemaphoreGive(xTEST_DONE);
-					while (1)
-					{
-						vTaskDelay(100);
-					}
+					vTaskDelay(100);
 				}
 			}
 		}
-		vTaskDelay(iTaskDelayPeriod);
 	}
 }
 
