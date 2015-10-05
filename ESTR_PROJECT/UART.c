@@ -118,7 +118,13 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 	int waiting = 0;
 	int done = 0;
 
-
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0;
+		}
+	}
 	while(!done)
 	{
 		if (!waiting)

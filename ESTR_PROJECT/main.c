@@ -89,6 +89,20 @@ int main( void )
 //Semaphores are queues declared here as they must be global to work.
 xSemaphoreHandle xTestMutex;
 
+/*
+ * Tests
+ * 0 - UART a
+ * 1 - UART b
+ * 2 - UART c)i
+ * 3 - UART c)ii
+ * 4 - UART d
+ * 5 - GPIO a
+ * 6 - GPIO b
+ * 7 - GPIO c
+ * 8 - GPIO d
+ * 9 - GPIO e
+ */
+
 // Test manager task, in charge of running and deleting tests.
 void Test_Manager()
 {

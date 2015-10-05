@@ -509,6 +509,7 @@ void vClockSpeed( void )
 	char * buffer = (char *) malloc (expectedLen);
 	int i = 0;
 	char cReceived;
+	int data [2]= {0};
 
 	typedef enum states {DEC, INC, FIN} CurrState;
 	CurrState state = DEC;
@@ -519,14 +520,15 @@ void vClockSpeed( void )
 	xToTimeout = xQueueCreate(10, sizeof(char));
 
 	// Initialising results struct.
-	Test_res* results_ptr;
 	Test_res results = {NULL,NULL,NULL,NULL,NULL};
+	Test_res* results_ptr;
 	results.test_type = '4';
 	results_ptr = &results;
 
 	// Reset the UUT and wait for it to boot up.
 	reset_uut();
 	vTaskDelay(500);
+
 
 	// Clears the queue before running the test to ensure predictable operation.
 	if (xUARTReadQueue !=0)
@@ -573,7 +575,7 @@ void vClockSpeed( void )
 			// Test complete. Send results to PC and clean up test.
 			increases = changes;
 			sprintf(strbuff,"Inc: %d Dec: %d", increases, decreases);
-			int data [2]= {0};
+
 			data[0] = increases;
 			data[1] = decreases;
 			results.test_data = data;
