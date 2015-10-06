@@ -47,4 +47,8 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 //Initialises UART0 including all required pins and interrupts for mirror function.
 void InitUART (void);
 
+// Empty uart read queue
+void UARTClearReadBuffer(void);
+
+
 #endif /* UART_H_ */

@@ -69,6 +69,8 @@ int main( void )
     // Test initialisation function.
     test_init();
 
+    reset_uut();	// Reset the uut
+
     //  The first character appears to be ignored by the UUT, so a single character is sent before the
     //  input UART starts to be read.
     UARTSend((unsigned char *)"q", 1, UART1_BASE);
@@ -110,8 +112,8 @@ void Test_Manager()
 
 	// State list for test manager.
 	typedef enum states {IDLE, TEST0, TEST1, TEST2, TEST3, TEST4,
-		TEST5, TEST6, TEST7, TEST8, TEST9} CurrState;	//TODO change to match names in spec ie TEST_G_a, TEST_U_a...
-
+		TEST5, TEST6, TEST7, TEST8, TEST9} CurrState;	
+		
 	CurrState state = IDLE;
 
 	xTestMutex = xSemaphoreCreateMutex();

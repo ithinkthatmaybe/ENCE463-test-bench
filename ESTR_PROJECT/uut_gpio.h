@@ -5,8 +5,8 @@
  *      Author: sws52
  */
 
-#ifndef TEST_ONE_H
-#define TEST_ONE_H
+#ifndef UUT_GPIO_H
+#define UUT_GPIO_H
 
 #include <stdio.h>
 
@@ -32,31 +32,6 @@
 #define MAX_NUM_PULSES 200
 
 
-// CONFIG Parameters
-//#ifndef CONFIG_H_
-//
-//		//currently controls the number of pulses for all tests
-//
-//	#define TEST_ONE_MAX_PERIOD_US 600  //undefined unit
-//	#define TEST_ONE_MIN_PERIOD_US 300   //undefined unit
-//	#define TEST_ONE_FREQ_STEP_US 100
-//
-//	#define TEST_TWO_INIT_PERIOD_US 600
-//	#define TEST_TWO_MIN_PERIOD_US 100
-//	#define TEST_TWO_FREQ_STEP_US 50
-//
-//	#define TEST_THREE_PERIOD_US 600
-//
-//	#define TEST_FOUR_PERIOD_US_A 600
-//	#define TEST_FOUR_PERIOD_US_B 599
-//
-//	#define TEST_FIVE_PERIOD_MS 30
-//	#define TEST_FIVE_NUM_PULSES 5
-//
-//#endif
-
-
-
 // set up GPIO pins on stellaris
 void InitGPIO (void);
 
@@ -66,6 +41,7 @@ void reset_uut(void);
 // Globals
 extern int g_num_pulses;
 
+// TODO: 
 extern int g_airspeed_pulse_count;
 extern int g_airspeed_response_flags[MAX_NUM_PULSES];
 extern unsigned int g_airspeed_times[MAX_NUM_PULSES];
@@ -93,4 +69,4 @@ void test_two_frequency_mod(void);
 
 
 
-#endif /* TEST_ONE_H_ */
+#endif /* UUT_GPIO_H_ */
