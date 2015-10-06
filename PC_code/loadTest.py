@@ -28,7 +28,7 @@ class LoadTest(object):
         self.packet3 = ""# assemble packets here.
         self.packet4 = ""# assemble packets here.
         self.i = 0
-        self.GPIO5THRESHOLD = 1000 # ms
+        self.GPIO5THRESHOLD = 1000 # us
         #self.allTest = False
         #self.allTestnum = 0
 
@@ -196,9 +196,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average airspeed latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum airspeed latency = {} ms".format(maximum)
-            message += "\n>>     minimum airspeed latency = {} ms".format(minimum)
+            message += "\n>>     average airspeed latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum airspeed latency = {} us".format(maximum)
+            message += "\n>>     minimum airspeed latency = {} us".format(minimum)
 
             self.packet1 = ""
             self.packet2 = ""
@@ -265,9 +265,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average airspeed latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum airspeed latency = {} ms".format(maximum)
-            message += "\n>>     minimum airspeed latency = {} ms".format(minimum)
+            message += "\n>>     average airspeed latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum airspeed latency = {} us".format(maximum)
+            message += "\n>>     minimum airspeed latency = {} us".format(minimum)
 
             self.packet1 = ""
             self.packet2 = ""
@@ -332,9 +332,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average airspeed latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum airspeed latency = {} ms".format(maximum)
-            message += "\n>>     minimum airspeed latency = {} ms".format(minimum)
+            message += "\n>>     average airspeed latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum airspeed latency = {} us".format(maximum)
+            message += "\n>>     minimum airspeed latency = {} us".format(minimum)
 
             #self.packet1 = ""
             #self.packet2 = ""
@@ -393,9 +393,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average tranponder latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum tranponder latency = {} ms".format(maximum)
-            message += "\n>>     minimum tranponder latency = {} ms".format(minimum)
+            message += "\n>>     average tranponder latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum tranponder latency = {} us".format(maximum)
+            message += "\n>>     minimum tranponder latency = {} us".format(minimum)
 
             self.packet1 = ""
             self.packet2 = ""
@@ -462,9 +462,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average airspeed latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum airspeed latency = {} ms".format(maximum)
-            message += "\n>>     minimum airspeed latency = {} ms".format(minimum)
+            message += "\n>>     average airspeed latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum airspeed latency = {} us".format(maximum)
+            message += "\n>>     minimum airspeed latency = {} us".format(minimum)
 
             #self.packet1 = ""
             #self.packet2 = ""
@@ -523,9 +523,9 @@ class LoadTest(object):
             for as_latencyTime in as_latency:
                 as_latencyTotal += int(as_latencyTime)
 
-            message += "\n>>     average tranponder latency = {} ms".format(as_latencyTotal/len(as_latency))
-            message += "\n>>     maximum tranponder latency = {} ms".format(maximum)
-            message += "\n>>     minimum tranponder latency = {} ms".format(minimum)
+            message += "\n>>     average tranponder latency = {} us".format(as_latencyTotal/len(as_latency))
+            message += "\n>>     maximum tranponder latency = {} us".format(maximum)
+            message += "\n>>     minimum tranponder latency = {} us".format(minimum)
 
             self.packet1 = ""
             self.packet2 = ""
