@@ -159,7 +159,7 @@ def COMWorker():
             
             
             message = ESTR.interpretTest(resultString)
-            print(message)
+            print(message, end='')
             #TUIQueue.put(message )
             #dataLog.write(message)
             dataLog.write(resultString)
@@ -190,9 +190,9 @@ def readTUI():
                 print("\nEnter test number: ".format(user_char), end='')
                 item = msvcrt.getch()
                 print("{}".format(item))
-                if item == "7":
-                    ESTR.resetESTR()
-                    time.sleep(0.5)
+                #if item == "7":
+                ESTR.resetESTR()
+                time.sleep(0.5)
                 COM.sendStr(item)
             #else:
             #    enterCommand_event.clear()

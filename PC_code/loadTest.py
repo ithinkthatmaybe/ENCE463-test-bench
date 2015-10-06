@@ -29,8 +29,8 @@ class LoadTest(object):
         self.packet4 = ""# assemble packets here.
         self.i = 0
         self.GPIO5THRESHOLD = 1000 # ms
-        self.allTest = False
-        self.allTestnum = 0
+        #self.allTest = False
+        #self.allTestnum = 0
 
     def loadTest(self, file): # program a new test on to the ESTR.
         """start 'LM Flash Programmer', load code on to ESTR.
@@ -48,7 +48,7 @@ class LoadTest(object):
     def testErrorCodes(self, data):
         """interprets the error codes that the ESTR may send."""
         message = "UART error code detected ({}).".format(data)
-        return message
+        return "\n>>" + message
 
     def testUART0(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -62,7 +62,7 @@ class LoadTest(object):
             message =  "UART sub-test {} passed.".format(subtest_number)
         else:
             message =  "UART sub-test {} result received but not interpreted.".format(subtest_number)
-        return message
+        return "\n>>" + message
 
     def testUART1(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -71,7 +71,7 @@ class LoadTest(object):
         message = ""
         message =  "UART sub-test {} result received but not interpreted.".format(subtest_number)
 
-        return message
+        return "\n>>" + message
 
     def testUART2(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -98,7 +98,7 @@ class LoadTest(object):
             message =  "UART sub-test {} failed. 'ST' identifier not present.".format(subtest_number)
         #message = "{}".format(infoList)
 
-        return message
+        return "\n>>" + message
 
     def testUART3(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -116,7 +116,7 @@ class LoadTest(object):
 
         #message =  "UART sub-test {} result received but not interpreted.".format(subtest_number)
 
-        return message
+        return "\n>>" + message
 
     def testUART4(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -131,7 +131,7 @@ class LoadTest(object):
         message += "\n>>     UUT clock speed incremented {} times before failer occured.".format(inc)
         message += "\n>>     UUT clock speed decremented {} times before failer occured.".format(dec)
 
-        return message
+        return "\n>>" + message
 
     def testGPIO5(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -204,7 +204,7 @@ class LoadTest(object):
             self.packet2 = ""
             self.i = 0
 
-            return message# + "{}".format(self.packetCount)
+            return "\n>>" + message# + "{}".format(self.packetCount)
 
         return ''
 
@@ -273,7 +273,7 @@ class LoadTest(object):
             self.packet2 = ""
             self.i = 0
 
-            return message# + "{}".format(self.packetCount)
+            return "\n>>" + message# + "{}".format(self.packetCount)
 
         return ''
 
@@ -323,7 +323,7 @@ class LoadTest(object):
                 result = "failed"
             else:
                 result = "passed"
-            message =  "GPIO sub-test {} air speed response {}. ".format(subtest_number, result)
+            message =  "GPIO sub-test {} air speed response {} (1/2). ".format(subtest_number, result)
             #
             message += "\n>>     non-responses = {}.".format(num_zeros)
             message += "\n>>     responses = {}.".format(num_ones)
@@ -384,7 +384,7 @@ class LoadTest(object):
                 result = "failed"
             else:
                 result = "passed"
-            message =  "GPIO sub-test {} tranponder response {}. ".format(subtest_number, result)
+            message =  "GPIO sub-test {} tranponder response {} (2/2). ".format(subtest_number, result)
             #
             message += "\n>>     non-responses = {}.".format(num_zeros)
             message += "\n>>     responses = {}.".format(num_ones)
@@ -403,7 +403,7 @@ class LoadTest(object):
             self.packet4 = ""
             self.i = 0
 
-            return message# + "{}".format(self.packetCount)
+            return "\n>>" + message# + "{}".format(self.packetCount)
 
         return ''
 
@@ -453,7 +453,7 @@ class LoadTest(object):
                 result = "failed"
             else:
                 result = "passed"
-            message =  "GPIO sub-test {} air speed response {}. ".format(subtest_number, result)
+            message =  "GPIO sub-test {} air speed response {} (1/2). ".format(subtest_number, result)
             #
             message += "\n>>     non-responses = {}.".format(num_zeros)
             message += "\n>>     responses = {}.".format(num_ones)
@@ -514,7 +514,7 @@ class LoadTest(object):
                 result = "failed"
             else:
                 result = "passed"
-            message =  "GPIO sub-test {} tranponder response {}. ".format(subtest_number, result)
+            message =  "GPIO sub-test {} tranponder response {} (2/2). ".format(subtest_number, result)
             #
             message += "\n>>     non-responses = {}.".format(num_zeros)
             message += "\n>>     responses = {}.".format(num_ones)
@@ -533,7 +533,7 @@ class LoadTest(object):
             self.packet4 = ""
             self.i = 0
 
-            return message# + "{}".format(self.packetCount)
+            return "\n>>" + message# + "{}".format(self.packetCount)
 
         return ''
 
@@ -559,7 +559,7 @@ class LoadTest(object):
             message =  "UART sub-test {} failed. 'ST' identifier not present.".format(subtest_number)
         #message = "{}".format(infoList)
 
-        return message
+        return "\n>>" + message
 
     def interpretUARTSubTests(self, resultString):
         """Determines if the result is a pass or fail for each subtest of.
@@ -707,7 +707,7 @@ class LoadTest(object):
                 message = "Invalid subtest number ({}) received.".format(subtest_num)
         else:
             message = "Internal Error. Could not interpret Test."
-        return "\n>> " + message #+ "{}".format(self.currentTest)
+        return message #+ "{}".format(self.currentTest)
 
     
 

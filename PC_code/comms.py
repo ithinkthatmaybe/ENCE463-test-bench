@@ -10,7 +10,7 @@ class Comms(object):
 		self.ser = serial.Serial()
 		self.ser.port = COM_port
 		self.ser.baudrate = baudrate
-		self.ser.timeout = 0.2
+		self.ser.timeout = 0
 		self.ser.parity = serial.PARITY_EVEN
 		self.ser.open()
 
