@@ -26,6 +26,7 @@ quit_event = threading.Event()
 enterCommand_event = threading.Event()
 enterCommand_event.clear()
 taskCompleted_event = threading.Event()
+doAllTests_event= threading.Event() 
 
 def closeWindow():
     root.destroy()
@@ -43,7 +44,7 @@ scrollbar.config(command=editArea.yview)
 scrollbar.pack(side="right", fill="y")
 editArea.pack(side="left", fill="both", expand=True)
 COMframe.pack()
-editArea.insert(tk.END, "Hello World!\n")
+#editArea.insert(tk.END, "Hello World!\n")
 
 def guiAddText(string):
     #editArea.config(state=tk.NORMAL)
@@ -61,17 +62,29 @@ def printMenu():
 	#print("       2 for GPIO test.")
 	#print("       3 for Blank 1 test.")
 	#print("       4 for Blank 2 test.")
-        print(" press 1 for combined test.")
-	print("       m or h for this menu.")
+        print("press: p to program ESTR.")
+	print("       h for this menu.")
 	print("       r to reset device.")
-	print("       s to send one character to COM port")
+	print("       s[test_num] to order test.")
 	print("       q to quit.\n")
-	print("-------------------------------------------------------------\n")
+	#print("-------------------------------------------------------------")
+        print("List of available tests:")
+        print("       0 mirror TX")
+        print("       1 mirror RX (ommitted)")
+        print("       2 status message")
+        print("       3 emergency test")
+        print("       4 proccessor clock variation test")
+        print("       5 typical airspeed operation")
+        print("       6 stressing airspeed operation")
+        print("       7 synchronous airspead transponder interference")
+        print("       8 asychronous airspeed transponder interference")
+        print("       9 transponder response verification\n")
+        print("-------------------------------------------------------------\n")
 
 def interpretCommand(command_chr):
     #enterCommand_event.set()
     # Check if input is valid.
-    if command_chr not in ["1", "2", "3", "4", "5", "m", "h", "r", "q", "s", "\n"]:
+    if command_chr not in ["p", "h", "r", "q", "s", "\n"]:
         print("Invalid Entry!")
     # Load the test onto Stellaris if input is valid.
     elif command_chr == "a":
@@ -93,7 +106,7 @@ def interpretCommand(command_chr):
         _path = os.getcwd() + "/testBins/test_blank_2.bin"
         ESTR.currentTest = ESTR.BLANK
         ESTR.loadTest(_path)
-    elif command_chr == "1":
+    elif command_chr == "p":
         _path = os.getcwd() + "/testBins/combined.bin"
         ESTR.currentTest = ESTR.COMBINED
         ESTR.loadTest(_path)
@@ -104,6 +117,8 @@ def interpretCommand(command_chr):
     	printMenu()
     elif command_chr =="q":
         quit_event.set()
+    #elif command_chr =="f":
+    #    doAllTests_event.set()
     else:
         pass
     #enterCommand_event.set()
@@ -141,18 +156,18 @@ def COMWorker():
                     semicolon_count += 1
                 #COMQueue.task_done()
 
-            #dataLog.write(resultString)
-            #print(resultString)
-            TUIQueue.put(resultString)
-            #enterCommand_event.set()
+            
+            
             message = ESTR.interpretTest(resultString)
-            #taskCompleted_event.set()
             print(message)
-            #TUIQueue.put(ESTR.interpretTest(resultString) )
-            dataLog.write(message)
-            enterCommand_event.clear()
-            COMQueue.task_done()
-        #COMQueue.task_done()
+            #TUIQueue.put(message )
+            #dataLog.write(message)
+            dataLog.write(resultString)
+            resultLog.write(message)
+            #TUIQueue.put(resultString)
+            #enterCommand_event.clear()
+            #COMQueue.task_done()
+        COMQueue.task_done()
 
 
 # read user input
@@ -160,29 +175,31 @@ def readTUI():
     while True:
         if msvcrt.kbhit():
             user_char = msvcrt.getch()
-            print("{}".format(user_char))
+            #print("{}".format(user_char))
             #print(user_char.encode('hex'))
             #guiAddText("<{}>\n".format(user_char))
             # Check input to see if user wants to quit.
-            #if user_char == "q": 
-            #    quit_event.set()
+            if user_char == "q": 
+                quit_event.set()
             # Check if input is valid.
             #else:
             enterCommand_event.set()
             interpretCommand(user_char)
             if user_char == "s":
 
-                print("\nEnter Character: ".format(user_char), end='')
+                print("\nEnter test number: ".format(user_char), end='')
                 item = msvcrt.getch()
                 print("{}".format(item))
+                if item == "7":
+                    ESTR.resetESTR()
+                    time.sleep(0.5)
                 COM.sendStr(item)
-            else:
-                enterCommand_event.clear()
-            while enterCommand_event.isSet():
-                pass
+            #else:
+            #    enterCommand_event.clear()
+            #while enterCommand_event.isSet():
+            #    pass
             
-            print("\nEnter Command: ".format(user_char), end='')
-            #print("packetcount = {}".format(ESTR.packetCount))
+            #print("\nEnter Command: ".format(user_char), end='')
             #enterCommand_event.clear()
         #user_input = raw_input("\nEnter Command: ")
         #interpretCommand(user_input)
@@ -192,15 +209,16 @@ def readTUI():
 
 
 printMenu()
-print("\nEnter Command: ", end='')
+#print("\nEnter Command: ", end='')
 
 
 # Make an object to represent the Stellaris.
 ESTR = LoadTest()
 ESTR.resetESTR()
 dataLog = FileManager("logs/datalog{}.txt")
+resultLog = FileManager("logs/resultlog{}.txt")
 try:
-    COM = Comms("COM31", 115200*2) #57600 #203400
+    COM = Comms("COM39", 115200*2) #57600 #203400
 except:
     quit_event.set()
     print("COM port could not be opened! Exiting...")
@@ -222,11 +240,12 @@ readTUIThread.start()
 task_counter = 0
 while not quit_event.isSet():
     root.update()
-    #if taskCompleted_event.isSet():
-    #    COM.sendStr(str(task_counter))
-    #    task_counter += 1
-    #    time.sleep(0.5)
-    #    taskCompleted_event.clear()
+    #if doAllTests_event.isSet():
+    #    if taskCompleted_event.isSet():
+    #        COM.sendStr(str(task_counter))
+    #        task_counter += 1
+    #        time.sleep(0.5)
+    #        taskCompleted_event.clear()
 # Done	
 print("That's all folks!")
 

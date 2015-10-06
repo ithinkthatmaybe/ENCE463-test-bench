@@ -28,7 +28,9 @@ class LoadTest(object):
         self.packet3 = ""# assemble packets here.
         self.packet4 = ""# assemble packets here.
         self.i = 0
-        self.GPIO5THRESHOLD = 500 # ms
+        self.GPIO5THRESHOLD = 1000 # ms
+        self.allTest = False
+        self.allTestnum = 0
 
     def loadTest(self, file): # program a new test on to the ESTR.
         """start 'LM Flash Programmer', load code on to ESTR.
@@ -42,6 +44,11 @@ class LoadTest(object):
         """Performs a hardware reset on the connected target device."""
         string = self.lmflashDirectory + " --hreset"
         os.system(string) # instigate command.
+
+    def testErrorCodes(self, data):
+        """interprets the error codes that the ESTR may send."""
+        message = "UART error code detected ({}).".format(data)
+        return message
 
     def testUART0(self, data):
         """Determines if the result is a pass or fail for each subtest of.
@@ -101,9 +108,9 @@ class LoadTest(object):
 
         expectedResponse = "ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6ERR:6"
         if data == expectedResponse:
-            result = "failed"
-        else:
             result = "passed"
+        else:
+            result = "failed"
         message =  "UART sub-test {} emergency mode test {}. ".format(subtest_number, result)
 
 
@@ -676,7 +683,7 @@ class LoadTest(object):
                 message = self.testUART0(dataString)
             elif subtest_num == "1":
                 #message = self.testUART1(dataString)
-                message = "Test does not exist."
+                message = "Test 1 spec not provided."
             elif subtest_num == "2":
                 message = self.testUART2(dataString)
             elif subtest_num == "3":
@@ -694,7 +701,8 @@ class LoadTest(object):
             elif subtest_num == "9":
                 message = self.testGPIO9(dataString)
             elif subtest_num == "E":
-                message = "E code detected."
+                return ""
+                #message = self.testErrorCodes(dataString)
             else:
                 message = "Invalid subtest number ({}) received.".format(subtest_num)
         else:
