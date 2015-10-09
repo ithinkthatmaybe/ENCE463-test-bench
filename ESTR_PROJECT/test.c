@@ -482,6 +482,18 @@ void vClockSpeed( void )
 
 void test_gpio_a_startup(void)
 {
+
+	// Register Airspeed response ISR
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Configure airspeed PWM
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_A_MAX_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_A_MAX_PERIOD_US*CYCLES_PER_US/2); // 50% duty
+
+	// Enable PWM output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
 	xTaskCreate(vGPIO_a, "gpio_test_a", 240, NULL, 2, &xGPIO_a);
 }
 
@@ -508,6 +520,18 @@ void test_gpio_a_shutdown(void)
 
 void test_gpio_b_startup(void)
 {
+	// Register Airspeed response ISR
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+
+	// Airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_B_INIT_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_B_MIN_PERIOD_US*CYCLES_PER_US/2);
+
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+
 	xTaskCreate(vGPIO_b, "gpio_test_b", 240, NULL, 2, &xGPIO_b);
 }
 
@@ -536,6 +560,26 @@ void test_gpio_b_shutdown(void)
 
 void test_gpio_c_startup(void)
 {
+	// Enable response interrupts
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+
+	// Airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_C_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_C_PERIOD_US*CYCLES_PER_US/2);
+
+	// Transponder pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, GPIO_C_PERIOD_US*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, GPIO_C_PERIOD_US*CYCLES_PER_US/2);
+
+	// Enable pwm output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+
 	xTaskCreate(vGPIO_c, "gpio_test_c", 240, NULL, 2, &xGPIO_c);
 }
 
@@ -565,6 +609,26 @@ void test_gpio_c_shutdown(void)
 
 void test_gpio_d_startup(void)
 {
+	// Enable response interrupts
+	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+
+	// Airspeed pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_D_PERIOD_US_A*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_D_PERIOD_US_A*CYCLES_PER_US/2);
+
+	// Transponder pulse generation
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, GPIO_D_PERIOD_US_B*CYCLES_PER_US);
+	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, GPIO_D_PERIOD_US_B*CYCLES_PER_US/2);
+
+	// Enable pwm output
+	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+
+	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
+	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
+
 	xTaskCreate(vGPIO_d, "gpio_test_d", 240, NULL, 2, &xGPIO_d);
 }
 
@@ -593,6 +657,11 @@ void test_gpio_d_shutdown(void)
 
 void test_gpio_e_startup(void)
 {
+	//TODO: test for several pulses
+	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+
+	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (1<<3));
+
 	xTaskCreate(vGPIO_e, "gpio_test_e", 600, NULL, 2, &xGPIO_e);
 }
 
@@ -603,12 +672,9 @@ void test_gpio_e_shutdown(void)
 	vTaskDelete(xGPIO_e);
 
 	// Disable response isr
-	GPIOPinIntDisable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 	GPIOPinIntDisable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
 	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));
-
-	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
 
 	uut_gpio_set_num_pulses(MAX_NUM_PULSES);
 
@@ -643,16 +709,6 @@ void vGPIO_a(void)
 	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
-		// Register Airspeed response ISR
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-
-	// Configure airspeed PWM
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_A_MAX_PERIOD_US*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_A_MAX_PERIOD_US*CYCLES_PER_US/2); // 50% duty
-
-	// Enable PWM output
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
 
 	// Frequency modulation variables
 	static char direction = 0;
@@ -717,17 +773,7 @@ void vGPIO_b (void)
 	Test_res* airspeed_latency_results_ptr = &airspeed_latency_results;
 	char airspeed_latency_id[RESULTS_ID_LEN] = "airspeed_latency\0";
 
-	// Register Airspeed response ISR
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
 
-	// Airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_B_INIT_PERIOD_US*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_B_MIN_PERIOD_US*CYCLES_PER_US/2);
-
-	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
-
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
 	static int period = GPIO_B_INIT_PERIOD_US;
 
 	for (;;)
@@ -789,25 +835,7 @@ void vGPIO_c (void)
 	char transponder_latency_id[RESULTS_ID_LEN] = "transponder_latency\0";
 
 
-	// Enable response interrupts
-	GPIOPinIntEnable(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
 
-
-	// Airspeed pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, GPIO_C_PERIOD_US*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, GPIO_C_PERIOD_US*CYCLES_PER_US/2);
-
-	// Transponder pulse generation
-	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, GPIO_C_PERIOD_US*CYCLES_PER_US);
-	PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, GPIO_C_PERIOD_US*CYCLES_PER_US/2);
-
-	// Enable pwm output
-	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-	PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-
-	PWMOutputState(PWM0_BASE, PWM_OUT_1_BIT, 1);
-	PWMOutputState(PWM0_BASE, PWM_OUT_5_BIT, 1);
 
 	// Wait for test to finish
 	for (;;)
@@ -853,8 +881,6 @@ void vGPIO_c (void)
 // Generate asynchronous events on two pins; provide statistics on latency and 1:1 response.
 void vGPIO_d (void)
 {
-
-
 	// Initialise result structures	
 
 	char airspeed_response_id[RESULTS_ID_LEN] = "airspeed_response_flags\0";
@@ -939,20 +965,13 @@ void vGPIO_e(void)
 	// Clears the queue before running the test to ensure predictable operation.
 	UARTClearReadBuffer();
 
-		// Generate a single pulse on the transponder pulse output,
-		// because we're only testing one pulse at this stage
-
-	//TODO: test for several pulses
-	GPIOPinIntEnable(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
-
-	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (1<<3));
-
+	// Generate a single pulse on the transponder output
 	g_transponder_pulse_count = 0;
 	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), (1<<3));
 	vTaskDelay(1);
 	GPIOPinWrite(GPIO_PORTF_BASE, (1<<3), ~(1<<3));
 
-	vTaskDelay(500 / portTICK_RATE_MS); //Wait to let the uut respond
+	vTaskDelay(500 / portTICK_RATE_MS); //Wait to let the uut start responding
 
 	for (;;)
 	{
@@ -964,7 +983,7 @@ void vGPIO_e(void)
 
 		i = 0;
 
-		// Append termination caracter
+		// Append termination caracters
 		while (i < maxLength)
 		{
 			if (i >= transponderLen)
