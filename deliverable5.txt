@@ -1,0 +1,36 @@
+
+Overview.
+
+			 Main
+		           \ 
+			    \
+    			   Test
+			   /   \
+			  /	\
+			 /	 \
+		    uut_gpio	uart
+			\	 /
+			 \	/
+			stopwatch
+
+Main.c
+	- Provides a test manager that recieves commands from python and initiates tests.
+
+
+Test.c
+	- Provides tasks that perform and monitor individual tests. Provides startup and shutdown tasks for 
+	  each test that configure stellaris peripherals before test and disable them after a test is complete
+
+
+
+uut_gpio.c
+	- ISRs and Utility functions for GPIO operations on the UUT
+		- pulse generation and response isrs for airspeed and transponder testing
+
+			PWM is used to generate stimulus for the uut, and GPIO triggered interrupts are used 
+			to monitor UUT response. Latency is measured using the stopwatch structure from
+			the stopwatch module. A stopwatch is started on the rising edge of the PWM output
+			and is subsequently stopped when a rising edge from the uut indicates that it has 
+			entered it's own response ISR. 
+
+	- utility functions enable the reseting of the UUT, which is done on system startup.
