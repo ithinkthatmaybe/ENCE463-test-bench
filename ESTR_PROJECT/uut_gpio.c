@@ -13,6 +13,8 @@
 int g_num_pulses = MAX_NUM_PULSES;
 
 // Globals
+
+// TODO: remove global useage. Have tests initialise own result arrays, use a global pointer to control access
 int g_airspeed_pulse_count = -1; // Initialise to -1 so that results are not saved for the first cycle
 stopwatch_t g_airspeed_stopwatch;
 int g_airspeed_response_flags[MAX_NUM_PULSES] = {0};
@@ -24,6 +26,7 @@ int g_transponder_response_flags[MAX_NUM_PULSES] = {0};
 unsigned int g_transponder_times[MAX_NUM_PULSES] = {0};
 
 
+// TODO: g_num_pulses is external global, remove usage of this function
 void uut_gpio_set_num_pulses(int pulses)
 {
 	g_num_pulses = pulses;
@@ -39,7 +42,7 @@ void airspeed_pulse_isr(void)
 {
 	PWMGenIntClear(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD);
 
-//	GPIOPinWrite(GPIO_PORTC_BASE, (1<<2), (1<<2));
+	//GPIOPinWrite(GPIO_PORTC_BASE, (1<<2), (1<<2)); // debug
 
 	if(g_airspeed_pulse_count >= 0)
 		// Proccess last latency measurement
@@ -51,7 +54,7 @@ void airspeed_pulse_isr(void)
 	if (g_airspeed_pulse_count >= g_num_pulses)
 		PWMGenDisable(PWM0_BASE, PWM_GEN_0);
 
-//	GPIOPinWrite(GPIO_PORTC_BASE, (1<<2), ~(1<<2));
+	//GPIOPinWrite(GPIO_PORTC_BASE, (1<<2), ~(1<<2)); // debug
 }
 
 /*-----------------------------------------------------------*/
@@ -159,12 +162,46 @@ void transponder_response_isr(void)
 
 void InitGPIO (void)
 {
-	// Enable GPIO port G
+	// GPIO test initialisation
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0 | SYSCTL_PERIPH_PWM);
+	SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);	// airspeed output
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);	// transponder output
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);	// airspeed response pin
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);	// transponder response pin
+
+	// Configure airspeed input
+	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3);
+	GPIOIntTypeSet(GPIO_PORTE_BASE, UUT_AIRSPEED_RESPONSE_PIN_PE3, GPIO_RISING_EDGE);
+	GPIOPortIntRegister(GPIO_PORTE_BASE, &airspeed_response_isr);
+
+	// Configure transponder input
+	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3);
+	GPIOIntTypeSet(GPIO_PORTB_BASE, UUT_TRANSPONDER_RESPONSE_PIN_PB3, GPIO_RISING_EDGE);
+	GPIOPortIntRegister(GPIO_PORTB_BASE, &transponder_response_isr);
+
+	// Configure airspeed pulse generation
+	GPIOPinTypePWM(GPIO_PORTD_BASE, (1<<1));	// Airspeed output TODO: make pin macro
+	PWMGenDisable(PWM0_BASE, PWM_GEN_0);
+	PWMIntDisable(PWM0_BASE, PWM_GEN_0);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN);
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_0, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_0, airspeed_pulse_isr);
+
+	// Configure transponder pulse generation
+	GPIOPinTypePWM(GPIO_PORTF_BASE, (1<<3));	// Transponder output TODO: make pin macro
+	PWMGenDisable(PWM0_BASE, PWM_GEN_2);
+	PWMIntDisable(PWM0_BASE, PWM_GEN_2);
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN);
+	PWMGenIntTrigEnable(PWM0_BASE, PWM_GEN_2, PWM_INT_CNT_LOAD); // configure pwm for end-of-cycle interrupt
+	PWMGenIntRegister(PWM0_BASE, PWM_GEN_2, transponder_pulse_isr);
+
+	// Configure UUT reset signal
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
 
 	GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_4);
 	GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_4, GPIO_PIN_4);
-	reset_uut();
 }
 
 

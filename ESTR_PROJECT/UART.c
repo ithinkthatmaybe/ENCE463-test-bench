@@ -35,8 +35,7 @@ UARTIntHandler(void)
     // Loop while there are characters in the receive FIFO.
     while(UARTCharsAvail(UART1_BASE))
     {
-        // Read the next character from the UART and write it back to the UART.
-        buff = UARTCharGetNonBlocking(UART1_BASE);
+        // Read the next character from the UART and write it back to the UART. buff = UARTCharGetNonBlocking(UART1_BASE);
     	//RIT128x96x4Clear();
     	xQueueSendFromISR(xUARTReadQueue, (void*)&buff, pdFALSE );
     }
@@ -68,8 +67,7 @@ UART_GPIO_IntHandler(void)
 }
 
 
-void
-UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase)
+void UARTSend(const unsigned char *pucBuffer, unsigned long ulCount, unsigned long ulBase)
 {
 
 
@@ -118,13 +116,8 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 	int waiting = 0;
 	int done = 0;
 
-	if (xUARTReadQueue !=0)
-	{
-		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
-		{
-			cReceived = 0;
-		}
-	}
+	UARTClearReadBuffer();
+
 	while(!done)
 	{
 		if (!waiting)
@@ -192,11 +185,7 @@ void mirrorUART(unsigned char *mirrorMessage, unsigned long ulCount, unsigned lo
 
 void InitUART (void)
 {
-
-
 	//GPIOPinConfigure(GPIO_PA0_U0RX);
-
-
 
 	// Enable GPIO for UART fault detection
 
@@ -227,27 +216,38 @@ void InitUART (void)
 	GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_2 | GPIO_PIN_3);
 
 
-	 // Configure the UART for 9600, 8-N-1 operation.
-//	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
-//						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-//						  UART_CONFIG_PAR_EVEN));
+	// Configure the UART for 9600, 8-N-1 operation.
+	//	 UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
+	//						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+	//						  UART_CONFIG_PAR_EVEN));
 
-	 UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 9600,
-							 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-							  UART_CONFIG_PAR_EVEN));
+	UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 9600,
+						 (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+						  UART_CONFIG_PAR_EVEN));
 
-	 // Register and enable the UART interrupt.
-	 //UARTEnable(UART0_BASE);
-	 UARTEnable(UART1_BASE);
-	 //UARTIntRegister(UART0_BASE, UARTIntHandler);
-	 UARTIntRegister(UART1_BASE, UARTIntHandler);
-	 //IntEnable(INT_UART0);
-	 IntEnable(INT_UART1);
+	// Register and enable the UART interrupt.
+	//UARTEnable(UART0_BASE);
+	UARTEnable(UART1_BASE);
+	//UARTIntRegister(UART0_BASE, UARTIntHandler);
+	UARTIntRegister(UART1_BASE, UARTIntHandler);
+	//IntEnable(INT_UART0);
+	IntEnable(INT_UART1);
 	// UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-	 UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
+	UARTIntEnable(UART1_BASE, UART_INT_RX | UART_INT_RT);
 
-	 // Create required queue for reading from UART
-	 xUARTReadQueue = xQueueCreate(40, sizeof(char));
-	 xUART_int_queue = xQueueCreate(10, sizeof(int));
-	 stopwatch_start(&UART_stopwatch);
+	// Create required queue for reading from UART
+	xUARTReadQueue = xQueueCreate(40, sizeof(char));
+	xUART_int_queue = xQueueCreate(10, sizeof(int));
+	stopwatch_start(&UART_stopwatch);
 }
+
+void UARTClearReadBuffer(void)
+{
+	char cReceived;
+	if (xUARTReadQueue !=0)
+	{
+		while (xQueueReceive(xUARTReadQueue, &cReceived, (portTickType)10))
+		{
+			cReceived = 0; }
+	}
+}	
