@@ -1,6 +1,7 @@
 # @created 25-8-2015
 # @author MCS
 # @description comms.py module for high level communications between ESTR and PC
+
 import serial # for UART hardware abstraction.
 
 
@@ -33,16 +34,3 @@ class Comms(object):
 	def inWaiting(self):
 		"""return the number of bytes waiting in the COM port."""
 		return self.ser.inWaiting()
-		
-    #def startTest(self, test_name) # send start test command.
-    #def stopTest(self) # abort test.
-    #def getResult(self, test) # ask the ESTR for test results.
-    #def getStatus(self) # returns the status of the ESTR.
-    #def getTest(self) # returns the test that the ESTR is currently doing.
-    #def sendWaveform(self, waveform) # send the GPIO test waveform.
-    #def reset(self) # start the test from begining.
-    
-
-
-
-    
