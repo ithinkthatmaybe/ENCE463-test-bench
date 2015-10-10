@@ -1,5 +1,5 @@
 
-Overview.
+Stellaris Overview.
 
 			 Main
 		           \ 
@@ -34,3 +34,29 @@ uut_gpio.c
 			entered it's own response ISR. 
 
 	- utility functions enable the reseting of the UUT, which is done on system startup.
+
+	
+	
+PC Overview.
+
+		gui
+	     /   |   \
+	  /      |      \
+      comms  loadTest  fileManager
+   
+gui.py
+	- Provides a graphical UART port monitor and command line interface that controls
+	  as the test manager. This creates two datalog files; one to log raw UART port 
+	  transmissions, the other to record interpreted test results.
+	  
+comms.py
+	- Provides a kernal for the UART hardware abstraction layer.
+	
+loadTest.py 
+	- Provides utilities that program binary files on to the Stellars. This can reset the
+	  Stellaris too. All of the tests functions that interpret test results are found here.
+	  
+fileManage.py
+	- Provides file creating and writing procedures to make datalog files.
+
+
