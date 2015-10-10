@@ -8,6 +8,10 @@
 // The PC_UART interrupt handler.
 //
 //*****************************************************************************
+
+
+// reads chars from UART buffer and pushes them onto a queue called
+//xCOMMS_FROM_PC_Queue as individual chars  
 void
 PC_UARTIntHandler(void)
 {
@@ -24,14 +28,15 @@ PC_UARTIntHandler(void)
     // Loop while there are characters in the receive FIFO.
     while(UARTCharsAvail(UART0_BASE))
     {
-        // Read the next character from the UART and write it back to the UART.
+        
         buff = UARTCharGetNonBlocking(UART0_BASE);
-    	//RIT128x96x4Clear();
     	xQueueSendFromISR(xCOMMS_FROM_PC_Queue, (void*)&buff, pdFALSE );
     }
 }
 
-
+// Used to setup UART channel 0 for communications with a PC 
+// Also initates tasks and smaphores used to ensure that a test is not 
+//terminated before sending the test results to the PC. 
 void Init_PC_UART (void)
 {
 	// Enable UART0 and GPIO Port A.
@@ -61,16 +66,26 @@ void Init_PC_UART (void)
 	 // create pc sending task
 	 xTaskCreate(send_results_to_PC, "PC_Send", 240, NULL, 1, NULL );
 	 vSemaphoreCreateBinary( xPC_SENT );
-	 xSemaphoreTake (xPC_SENT, (portTickType)100);
-	 // used for displaying text from PC sent by UART. For testing purposes only
+	 xSemaphoreTake (xPC_SENT, (portTickType)100); // used to ensure task is not terminated before results are sent to PC
 }
 
+
+
 void send_results_to_PC()
+
+// This task constanly runs in the background and monitors the queue called xSEND_RESULTS_Queue.
+// If an item appears in the queue it will be sent via UART to the PC. The items must be
+// a struct of type Test_results.
+// This struct contains text, an array of ints or a combination of the two. 
+// This allows a full set of test results to be sent via a single queue push.
+// A semaphore is used to synchronise the deletion of tasks and the sending of the data produced 
+//by them
+
 {
 	int i = 0;
-	int temp = 0;
+	int element_num = 0;
 	char charbuff[10];
-	struct Test_results*  results;
+	struct Test_results*  results;  
 
 	int sent = 0;
 
@@ -93,10 +108,10 @@ void send_results_to_PC()
 				// Semi colon used to indicate start of data array.
 				UARTCharPutNonBlocking(UART0_BASE, ';');
 
-				temp = (*results).num_of_elements;
+				element_num = (*results).num_of_elements;
 				if ((*results).test_data != NULL)
 				{
-			       for (i = 0; i < temp; i++)
+			       for (i = 0; i < element_num; i++)
 			       {
 			        // convert  each long to a string
 			        sprintf(charbuff, "%d", *((*results).test_data+(i)));
@@ -143,4 +158,3 @@ void send_results_to_PC()
 		}
 	}
 }
-
