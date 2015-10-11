@@ -32,6 +32,9 @@ UART.c and PC_UART.c
     - PC_UART.c implements a send_results_to_PC() function which is used to send arbitrary data to the PC.
       This is a complicated function as it tends to occur at the end of a test, so a semphore is used to
       signal that the test tasks can be deleted (and the results with them). 
+      
+    - PC_UART.c also implements a struct Test_results which is used to send pointers to the test results.
+      The actual data is not passed through the queue as it is of variable size.
 
 
 uut_gpio.c
