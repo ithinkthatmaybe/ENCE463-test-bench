@@ -1,4 +1,3 @@
-
 Stellaris Overview.
 
 			 Main
@@ -14,13 +13,25 @@ Stellaris Overview.
 			stopwatch
 
 Main.c
-	- Provides a test manager that recieves commands from python and initiates tests.
+	- Provides a test manager that recieves commands from the PC and initiates tests by calling the appropriate
+	  functions from Test.c
 
 
 Test.c
 	- Provides tasks that perform and monitor individual tests. Provides startup and shutdown tasks for 
 	  each test that configure stellaris peripherals before test and disable them after a test is complete
 
+
+UART.c and PC_UART.c
+    - Provides functions and ISRs to enable communication over UART to the uut and PC respectively. PC_UART 
+      calls the UARTSend() function from UART.c as it has identical functionality. 
+      
+    - The mirrorUART() function in UART.c sends a message to the uut and waits for a response of the given
+      expected length. It has functionality to ensure that it will stop waiting for a response on a timeout.
+      
+    - PC_UART.c implements a send_results_to_PC() function which is used to send arbitrary data to the PC.
+      This is a complicated function as it tends to occur at the end of a test, so a semphore is used to
+      signal that the test tasks can be deleted (and the results with them). 
 
 
 uut_gpio.c
@@ -58,5 +69,3 @@ loadTest.py
 	  
 fileManage.py
 	- Provides file creating and writing procedures to make datalog files.
-
-
