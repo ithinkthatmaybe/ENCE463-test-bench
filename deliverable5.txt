@@ -11,6 +11,11 @@ Stellaris Overview.
 			\	 /
 			 \	/
 			stopwatch
+			
+
+We have designed the code in a highly modular fashion in order to facilitate future expansion of the tests into a full
+testing environment. This includes consideration of factors such as running tests in parallel and sequentially, as well
+as a comprehensive structure for future tests.
 
 Main.c
 	- Provides a test manager that recieves commands from the PC and initiates tests by calling the appropriate
