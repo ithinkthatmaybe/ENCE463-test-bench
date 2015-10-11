@@ -64,10 +64,10 @@ gui.py
 	  transmissions, the other to record interpreted test results.
 	  
 comms.py
-	- Provides a kernal for the UART hardware abstraction layer.
+	- Provides a kernel for the UART hardware abstraction layer.
 	
 loadTest.py 
-	- Provides utilities that program binary files on to the Stellars. This can reset the
+	- Provides utilities that program binary files on to the Stellaris. This can reset the
 	  Stellaris too. All of the tests functions that interpret test results are found here.
 	  
 fileManage.py
